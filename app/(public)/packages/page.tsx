@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { userApi, Package as ApiPackage } from '@/lib/api/user.api';
 import { UAE_EMIRATES } from '@/lib/constants';
 
@@ -51,6 +51,11 @@ export default function PackagesPage() {
     const [error, setError] = useState<string | null>(null);
     const [occasions, setOccasions] = useState<Array<{ id: string; name: string }>>([]);
     const router = useRouter();
+
+    // Scroll ref for occasions
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
 
     // Read occasion_id, occasion_name, and cuisine_type_id from URL on mount
     useEffect(() => {
@@ -151,6 +156,35 @@ export default function PackagesPage() {
         };
         fetchOccasions();
     }, []);
+
+    // Check scroll position for arrows
+    const checkScroll = () => {
+        if (scrollContainerRef.current) {
+            const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+            setCanScrollLeft(scrollLeft > 0);
+            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+        }
+    };
+
+    // Update scroll state when occasions change
+    useEffect(() => {
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [occasions]);
+
+    // Scroll functions
+    const scrollLeft = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+        }
+    };
+
+    const scrollRight = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+        }
+    };
 
     // Build filters object for API
     const buildFilters = () => {
@@ -316,210 +350,168 @@ export default function PackagesPage() {
             {/* Occasion Filters */}
             {occasions.length > 0 && (
                 <div className="max-w-7xl mx-auto px-6 mt-6">
-                    <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6">
-                        <h3 className="text-sm font-medium text-gray-700 mb-4">
-                            Filter by Occasions <span className="text-gray-500 font-normal">(Select all that apply)</span>
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    <div className="relative flex items-center gap-2">
+                        {/* Left Arrow */}
+                        {canScrollLeft && (
+                            <button
+                                onClick={scrollLeft}
+                                className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                aria-label="Scroll left"
+                            >
+                                <ChevronLeft size={18} className="text-gray-600" />
+                            </button>
+                        )}
+
+                        {/* Scrollable Container */}
+                        <div 
+                            ref={scrollContainerRef}
+                            onScroll={checkScroll}
+                            className="flex gap-3 overflow-x-auto no-scrollbar flex-1"
+                        >
                             {occasions.map((occasion) => (
                                 <label
                                     key={occasion.id}
-                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition"
+                                    className="cursor-pointer flex-shrink-0"
                                 >
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="occasion"
                                         checked={selectedOccasions.includes(occasion.id)}
-                                        onChange={(e) => {
-                                            if (e.target.checked) {
-                                                setSelectedOccasions([...selectedOccasions, occasion.id]);
+                                        onChange={() => {
+                                            if (selectedOccasions.includes(occasion.id)) {
+                                                // Deselect if already selected
+                                                setSelectedOccasions([]);
+                                                // Also clear URL params if present
+                                                if (occasionId || occasionNameParam) {
+                                                    setOccasionId('');
+                                                    setOccasionName('');
+                                                    setOccasionNameParam('');
+                                                    const params = new URLSearchParams(window.location.search);
+                                                    params.delete('occasion_id');
+                                                    params.delete('occasion_name');
+                                                    const newUrl = params.toString()
+                                                        ? `/packages?${params.toString()}`
+                                                        : '/packages';
+                                                    window.history.replaceState({}, '', newUrl);
+                                                }
                                             } else {
-                                                setSelectedOccasions(selectedOccasions.filter(id => id !== occasion.id));
+                                                // Select this occasion only
+                                                setSelectedOccasions([occasion.id]);
                                             }
                                         }}
-                                        className="w-4 h-4 text-[#268700] border-gray-300 rounded focus:ring-[#268700]"
+                                        className="sr-only peer"
                                     />
-                                    <span className="text-sm text-gray-700">{occasion.name}</span>
+                                    <span className="inline-block px-6 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 transition-all peer-checked:bg-[#268700] peer-checked:text-white peer-checked:border-[#268700] hover:border-gray-300 whitespace-nowrap">
+                                        {occasion.name}
+                                    </span>
                                 </label>
                             ))}
                         </div>
-                        {selectedOccasions.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
-                                <span className="text-sm text-gray-600">
-                                    {selectedOccasions.length} occasion{selectedOccasions.length !== 1 ? 's' : ''} selected
-                                </span>
-                                <button
-                                    onClick={() => {
-                                        setSelectedOccasions([]);
-                                        // Also clear URL params if present
-                                        if (occasionId || occasionNameParam) {
-                                            setOccasionId('');
-                                            setOccasionName('');
-                                            setOccasionNameParam('');
-                                            const params = new URLSearchParams(window.location.search);
-                                            params.delete('occasion_id');
-                                            params.delete('occasion_name');
-                                            const newUrl = params.toString()
-                                                ? `/packages?${params.toString()}`
-                                                : '/packages';
-                                            window.history.replaceState({}, '', newUrl);
-                                        }
-                                    }}
-                                    className="text-sm text-[#268700] hover:text-[#1f6b00] font-medium"
-                                >
-                                    Clear Selection
-                                </button>
-                            </div>
+
+                        {/* Right Arrow */}
+                        {canScrollRight && (
+                            <button
+                                onClick={scrollRight}
+                                className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                aria-label="Scroll right"
+                            >
+                                <ChevronRight size={18} className="text-gray-600" />
+                            </button>
                         )}
                     </div>
                 </div>
             )}
 
-            <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
+            {/* Filter Dropdowns */}
+            <div className="max-w-7xl mx-auto px-6 mt-6">
+                <div className="flex items-center justify-start gap-3 flex-wrap">
+                    {/* Location Dropdown */}
+                    <select
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        className="bg-white border border-gray-200 rounded-full px-6 py-2.5 text-sm font-medium text-gray-700 hover:border-gray-300 transition-all cursor-pointer appearance-none pr-10 bg-no-repeat bg-right"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundPosition: 'right 1rem center',
+                            backgroundSize: '16px'
+                        }}
+                    >
+                        <option value="">Location</option>
+                        {UAE_EMIRATES.map((emirate) => (
+                            <option key={emirate} value={emirate}>
+                                {emirate}
+                            </option>
+                        ))}
+                    </select>
 
-                {/* LEFT FILTERS */}
-                <aside className="bg-white border border-gray-200 rounded-xl p-4 h-fit">
-                    <div className="flex items-center justify-between mb-0 lg:mb-4" onClick={() => setShowFilters(!showFilters)}>
-                        <h3 className="font-medium flex items-center gap-2 cursor-pointer lg:cursor-default">
-                            <Filter size={18} className="lg:hidden" />
-                            Filters
-                            <span className="lg:hidden text-xs bg-gray-100 px-2 py-0.5 rounded-full ml-2">
-                                {(location ? 1 : 0) + (minGuests || maxGuests ? 1 : 0) + (minPrice || maxPrice !== 50000 ? 1 : 0) + (menuType ? 1 : 0)}
-                            </span>
-                        </h3>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleClearFilters();
-                                }}
-                                className="text-sm text-gray-500 border border-gray-200 py-1 cursor-pointer px-2 rounded-xl hover:bg-gray-100"
-                            >
-                                Clear
-                            </button>
-                            <button
-                                className="lg:hidden p-1"
-                            >
-                                {showFilters ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                            </button>
-                        </div>
-                    </div>
+                    {/* Menu Type Dropdown */}
+                    <select
+                        value={menuType}
+                        onChange={(e) => setMenuType(e.target.value as 'fixed' | 'customizable' | '')}
+                        className="bg-white border border-gray-200 rounded-full px-6 py-2.5 text-sm font-medium text-gray-700 hover:border-gray-300 transition-all cursor-pointer appearance-none pr-10 bg-no-repeat bg-right"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundPosition: 'right 1rem center',
+                            backgroundSize: '16px'
+                        }}
+                    >
+                        <option value="">Menu Type</option>
+                        <option value="fixed">Fixed</option>
+                        <option value="customizable">Customizable</option>
+                    </select>
 
+                    {/* Guests Dropdown */}
+                    <select
+                        value={minGuests || ''}
+                        onChange={(e) => setMinGuests(e.target.value ? Number(e.target.value) : '')}
+                        className="bg-white border border-gray-200 rounded-full px-6 py-2.5 text-sm font-medium text-gray-700 hover:border-gray-300 transition-all cursor-pointer appearance-none pr-10 bg-no-repeat bg-right"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundPosition: 'right 1rem center',
+                            backgroundSize: '16px'
+                        }}
+                    >
+                        <option value="">Min Guests</option>
+                        {[10, 20, 30, 50, 75, 100, 150, 200, 300, 500].map((num) => (
+                            <option key={num} value={num}>
+                                {num}+
+                            </option>
+                        ))}
+                    </select>
 
+                    {/* Max Price Dropdown */}
+                    <select
+                        value={maxPrice === 50000 ? '' : maxPrice}
+                        onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : 50000)}
+                        className="bg-white border border-gray-200 rounded-full px-6 py-2.5 text-sm font-medium text-gray-700 hover:border-gray-300 transition-all cursor-pointer appearance-none pr-10 bg-no-repeat bg-right"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundPosition: 'right 1rem center',
+                            backgroundSize: '16px'
+                        }}
+                    >
+                        <option value="">Budget</option>
+                        <option value="5000">Under AED 5,000</option>
+                        <option value="10000">Under AED 10,000</option>
+                        <option value="15000">Under AED 15,000</option>
+                        <option value="20000">Under AED 20,000</option>
+                        <option value="30000">Under AED 30,000</option>
+                        <option value="50000">Under AED 50,000</option>
+                    </select>
 
-                    <div className={`mt-4 lg:mt-0 ${showFilters ? 'block' : 'hidden'} lg:block space-y-6 lg:space-y-0`}>
-                        {/* Location */}
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-500 mb-2 block">Location</label>
-                            <select
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2"
-                            >
-                                <option value="">All Emirates</option>
-                                {UAE_EMIRATES.map((emirate) => (
-                                    <option key={emirate} value={emirate}>
-                                        {emirate}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    {/* Clear Filters Button */}
+                    {(location || menuType || minGuests || maxPrice !== 50000 || selectedOccasions.length > 0) && (
+                        <button
+                            onClick={handleClearFilters}
+                            className="bg-white border border-gray-200 rounded-full px-6 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all"
+                        >
+                            Clear All
+                        </button>
+                    )}
+                </div>
+            </div>
 
-                        {/* Guests Range */}
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-500 mb-2 block">Guests</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <input
-                                    type="number"
-                                    value={minGuests}
-                                    onChange={(e) => setMinGuests(e.target.value ? Number(e.target.value) : '')}
-                                    placeholder="Min"
-                                    min="1"
-                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2"
-                                />
-                                <input
-                                    type="number"
-                                    value={maxGuests}
-                                    onChange={(e) => setMaxGuests(e.target.value ? Number(e.target.value) : '')}
-                                    placeholder="Max"
-                                    min="1"
-                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Price Range */}
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-500 mb-2 block flex items-center gap-1">
-                                Max Price (<img src="/dirham.svg" alt="AED" className="w-3 h-3 inline" />)
-                            </label>
-                            <input
-                                type="range"
-                                min={1000}
-                                max={50000}
-                                step={1000}
-                                value={maxPrice}
-                                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                                className="w-full mt-2"
-                            />
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span className="flex items-center gap-1"><img src="/dirham.svg" alt="AED" className="w-3 h-3" />1,000</span>
-                                <span className="flex items-center gap-1"><img src="/dirham.svg" alt="AED" className="w-3 h-3" />{maxPrice.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        {/* Min Price */}
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-500 mb-2 block flex items-center gap-1">
-                                Min Price (<img src="/dirham.svg" alt="AED" className="w-3 h-3 inline" />)
-                            </label>
-                            <input
-                                type="number"
-                                value={minPrice}
-                                onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : '')}
-                                placeholder="Minimum price"
-                                min="0"
-                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2"
-                            />
-                        </div>
-
-                        {/* Menu Type */}
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-500 mb-2 block">Menu Type</label>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="menuType"
-                                        checked={menuType === 'fixed'}
-                                        onChange={() => setMenuType('fixed')}
-                                        className="w-4 h-4"
-                                    />
-                                    <span className="text-sm">Fixed</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="menuType"
-                                        checked={menuType === 'customizable'}
-                                        onChange={() => setMenuType('customizable')}
-                                        className="w-4 h-4"
-                                    />
-                                    <span className="text-sm">Customizable</span>
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="radio"
-                                        name="menuType"
-                                        checked={menuType === ''}
-                                        onChange={() => setMenuType('')}
-                                        className="w-4 h-4"
-                                    />
-                                    <span className="text-sm">All</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+            <div className="max-w-7xl mx-auto px-6 py-10">
 
                 {/* RIGHT CONTENT */}
                 <div>
@@ -643,7 +635,7 @@ export default function PackagesPage() {
                             <div className="mb-4 text-sm text-gray-600">
                                 Showing {packages.length} package{packages.length !== 1 ? 's' : ''}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                                 {packages.map((pkg) => {
                                     const apiPkg = apiPackagesData.find((p: any) => p.id === pkg.id);
                                     const minimumPeople = apiPkg?.minimum_people || apiPkg?.people_count || 1;
@@ -652,89 +644,59 @@ export default function PackagesPage() {
                                         <Link
                                             key={pkg.id}
                                             href={`/caterers/${pkg.catererId}?packageId=${pkg.id}`}
-                                            className="bg-white rounded-[1.5rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer"
+                                            className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:border-gray-300 flex flex-col h-full"
                                         >
                                             {/* Image Section */}
-                                            <div className="relative h-[240px] w-full bg-gray-50">
+                                            <div className="relative h-52 bg-gray-100 overflow-hidden flex-shrink-0">
                                                 <Image
                                                     src={pkg.image}
                                                     alt={pkg.title}
                                                     fill
-                                                    className={pkg.image === '/logo2.svg' || pkg.image.includes('logo2.svg') ? "object-contain p-8" : "object-cover"}
+                                                    className={pkg.image === '/logo2.svg' || pkg.image.includes('logo2.svg') ? "object-contain p-8" : "object-cover group-hover:scale-105 transition-transform duration-300"}
                                                 />
 
-                                                {/* Badges */}
-                                                <div className="absolute top-4 right-4 flex flex-col gap-2">
-                                                    {pkg.customizable && (
-                                                        <span className="bg-green-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
-                                                            Customisable
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                {/* Rating Badge */}
+                                                {pkg.rating && (
+                                                    <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
+                                                        <span>⭐</span>
+                                                        <span>{Number(pkg.rating).toFixed(1)}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Customizable Badge */}
+                                                {pkg.customizable && (
+                                                    <div className="absolute top-3 left-3 bg-[#268700] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                                                        Customisable
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Content Section */}
-                                            <div className="p-4 flex flex-col flex-1">
-                                                {/* Caterer Name with Verified Badge */}
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <svg className="w-4 h-4 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-                                                        <circle cx="12" cy="12" r="3" />
-                                                    </svg>
-                                                    <span className="text-sm font-bold text-gray-700">{pkg.caterer}</span>
-                                                    <svg className="w-4 h-4 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                    </svg>
-                                                </div>
-
-                                                {/* Package Name */}
-                                                <h3 className="text-xl font-black text-gray-900 mb-2 leading-tight">
+                                            <div className="p-6 flex flex-col flex-grow">
+                                                <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-[#268700] transition-colors">
                                                     {pkg.title}
                                                 </h3>
 
-
-                                                {/* Package Description */}
-                                                {apiPkg?.description && (
-                                                    <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
-                                                        {apiPkg.description}
-                                                    </p>
-                                                )}
-
-                                                {/* Rating and People Count */}
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    {pkg.rating && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                            </svg>
-                                                            <span className="text-sm font-bold text-gray-900">{Number(pkg.rating).toFixed(1)}</span>
-                                                            <span className="text-xs text-gray-400">(43)</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center gap-1.5">
-                                                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                        </svg>
-                                                        <span className="text-sm font-bold text-gray-700">Min. {minimumPeople}</span>
-                                                    </div>
+                                                {/* Caterer Name & Min People */}
+                                                <div className="flex flex-wrap gap-2 mb-4 min-h-[24px]">
+                                                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                                                        {pkg.caterer}
+                                                    </span>
+                                                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                                                        Min. {minimumPeople}
+                                                    </span>
                                                 </div>
 
-                                                {/* Spacer to push price/button to bottom */}
-                                                <div className="flex-1"></div>
-
-                                                {/* Price and Button */}
-                                                <div className="flex items-center justify-between pt-4 border-t border-gray-100 gap-3">
-                                                    <div className="min-w-0">
-                                                        <div className="text-[10px] text-gray-500 mb-0.5 uppercase tracking-wide">Starting from</div>
-                                                        <div className="text-xl font-black text-gray-900">
+                                                {/* Price and CTA - Pushed to bottom */}
+                                                <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 mb-0.5">Starting from</p>
+                                                        <p className="text-sm font-semibold text-gray-900">
                                                             AED {typeof pkg.price === 'number' ? pkg.price.toLocaleString() : parseInt(String(pkg.price || '0'), 10).toLocaleString()}
-                                                        </div>
-                                                        <div className="text-xs text-gray-400 font-medium mt-0.5 whitespace-nowrap">for {minimumPeople} people</div>
+                                                        </p>
                                                     </div>
-                                                    <div
-                                                        className="bg-[#268700] hover:bg-[#1f6b00] text-white px-4 py-2.5 rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-lg active:scale-95 whitespace-nowrap pointer-events-none"
-                                                    >
-                                                        View Package
+                                                    <div className="text-[#268700] font-medium text-sm group-hover:translate-x-1 transition-transform whitespace-nowrap">
+                                                        View Package →
                                                     </div>
                                                 </div>
                                             </div>
