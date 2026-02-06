@@ -499,5 +499,101 @@ export const adminApi = {
       method: 'DELETE',
     });
   },
+  // ============================================================================
+  // ORDER MANAGEMENT
+  // ============================================================================
+
+  getAllOrders: async (params?: { status?: string; startDate?: string; endDate?: string; search?: string; catererId?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.catererId) queryParams.append('catererId', params.catererId);
+
+    const queryString = queryParams.toString();
+    const url = `/api/admin/orders${queryString ? `?${queryString}` : ''}`;
+
+    return apiRequest<{
+      success: boolean;
+      data: Array<{
+        id: string;
+        user_id: string;
+        total_price: number;
+        currency: string;
+        status: 'PENDING' | 'CONFIRMED' | 'PAID' | 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+        created_at: string;
+        updated_at: string;
+        user: {
+          id: string;
+          first_name: string;
+          last_name: string;
+          email: string;
+          phone: string;
+        };
+        items: Array<{
+          id: string;
+          package: {
+            name: string;
+            caterer: {
+              company_name: string | null;
+              first_name: string;
+              last_name: string;
+            };
+          };
+        }>;
+      }>;
+    }>(url);
+  },
+
+  getOrderById: async (id: string) => {
+    return apiRequest<{
+      success: boolean;
+      data: {
+        id: string;
+        user_id: string;
+        total_price: number;
+        currency: string;
+        status: 'PENDING' | 'CONFIRMED' | 'PAID' | 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+        created_at: string;
+        updated_at: string;
+        user: {
+          id: string;
+          first_name: string;
+          last_name: string;
+          email: string;
+          phone: string;
+          company_name: string | null;
+        };
+        items: Array<{
+          id: string;
+          package: {
+            name: string;
+            caterer: {
+              company_name: string | null;
+              first_name: string;
+              last_name: string;
+              catererinfo: {
+                business_name: string | null;
+              } | null;
+            };
+          };
+          add_ons: Array<{
+            id: string;
+            quantity: number;
+            price_at_time: number;
+            add_on: {
+              name: string;
+            };
+          }>;
+          price_at_time: number;
+          quantity: number;
+          guests: number | null;
+          date: string | null;
+          location: string | null;
+        }>;
+      };
+    }>(`/api/admin/orders/${id}`);
+  },
 };
 
