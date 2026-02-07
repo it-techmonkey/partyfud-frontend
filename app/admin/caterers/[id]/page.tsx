@@ -227,14 +227,14 @@ export default function CatererDetailPage() {
             </div>
             <span
               className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase ${caterer.status === 'APPROVED'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : caterer.status === 'PENDING'
-                    ? 'bg-amber-100 text-amber-700'
-                    : caterer.status === 'REJECTED'
-                      ? 'bg-red-100 text-red-700'
-                      : caterer.status === 'BLOCKED'
-                        ? 'bg-gray-200 text-gray-700'
-                        : 'bg-gray-200 text-gray-700'
+                ? 'bg-emerald-100 text-emerald-700'
+                : caterer.status === 'PENDING'
+                  ? 'bg-amber-100 text-amber-700'
+                  : caterer.status === 'REJECTED'
+                    ? 'bg-red-100 text-red-700'
+                    : caterer.status === 'BLOCKED'
+                      ? 'bg-gray-200 text-gray-700'
+                      : 'bg-gray-200 text-gray-700'
                 }`}
             >
               {caterer.status}
@@ -509,8 +509,8 @@ export default function CatererDetailPage() {
                 onClick={handleUnblockCaterer}
                 disabled={unblocking}
                 className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm ${unblocking
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-md'
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-md'
                   }`}
               >
                 {unblocking ? 'Unblocking...' : 'UNBLOCK CATERER'}
@@ -518,10 +518,10 @@ export default function CatererDetailPage() {
             ) : (
               <button
                 onClick={handleBlockCaterer}
-                disabled={blocking || caterer.status === 'BLOCKED'}
-                className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm ${blocking || caterer.status === 'BLOCKED'
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
+                disabled={blocking || (caterer.status as string) === 'BLOCKED'}
+                className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm ${blocking || (caterer.status as string) === 'BLOCKED'
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
                   }`}
               >
                 {blocking ? 'Blocking...' : 'BLOCK CATERER'}
