@@ -13,6 +13,7 @@ interface Caterer {
   email: string;
   phone: string;
   registered: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'BLOCKED';
 }
 
 export default function CaterersPage() {
@@ -22,14 +23,15 @@ export default function CaterersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch approved caterers only
+  // Fetch approved and blocked caterers
   useEffect(() => {
     const fetchCatererInfo = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
-        const response = await adminApi.getCatererInfo('APPROVED');
+        // Fetch all caterers (no status filter)
+        const response = await adminApi.getCatererInfo();
 
         if (response.error) {
           setError(response.error);
@@ -39,7 +41,13 @@ export default function CaterersPage() {
 
         if (response.data?.success && response.data.data) {
           console.log('Raw API response data:', response.data.data.slice(0, 2));
-          const caterers: Caterer[] = response.data.data.map((item) => {
+
+          // Filter for APPROVED and BLOCKED caterers
+          const relevantCaterers = response.data.data.filter(
+            (item) => item.status === 'APPROVED' || item.status === 'BLOCKED'
+          );
+
+          const caterers: Caterer[] = relevantCaterers.map((item) => {
             console.log(`Mapping ${item.business_name}: cuisines =`, item.cuisines);
             return {
               id: item.id,
@@ -50,6 +58,7 @@ export default function CaterersPage() {
               email: item.caterer.email,
               phone: item.caterer.phone,
               registered: new Date(item.created_at).toLocaleDateString(),
+              status: item.status,
             };
           });
           console.log('Mapped caterers:', caterers.slice(0, 2));
@@ -81,13 +90,13 @@ export default function CaterersPage() {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Approved Caterers</h1>
-              <p className="text-gray-600 mt-2 text-sm">Manage and view all approved caterers</p>
+              <h1 className="text-3xl font-bold text-gray-900">Manage Caterers</h1>
+              <p className="text-gray-600 mt-2 text-sm">View and manage approved and blocked caterers</p>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-gray-900">{items.length}</p>
               <p className="text-sm text-gray-600">
-                {items.length === 1 ? 'caterer' : 'caterers'} approved
+                {items.length === 1 ? 'caterer' : 'caterers'} total
               </p>
             </div>
           </div>
@@ -134,7 +143,7 @@ export default function CaterersPage() {
             {filtered.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                 <p className="text-gray-500 text-base">
-                  {search ? 'No caterers found matching your search.' : 'No approved caterers found.'}
+                  {search ? 'No caterers found matching your search.' : 'No caterers found.'}
                 </p>
               </div>
             ) : (
@@ -155,8 +164,15 @@ export default function CaterersPage() {
                           <span>{c.city}</span>
                         </p>
                       </div>
-                      <span className="text-xs font-semibold bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full uppercase tracking-wide">
-                        Approved
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase ${c.status === 'APPROVED'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : c.status === 'BLOCKED'
+                              ? 'bg-gray-200 text-gray-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}
+                      >
+                        {c.status}
                       </span>
                     </div>
 

@@ -48,6 +48,7 @@ export default function CatererDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [blocking, setBlocking] = useState(false);
+  const [unblocking, setUnblocking] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<{ url: string; name: string } | null>(null);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function CatererDetailPage() {
     setError(null);
     try {
       const response = await adminApi.getCatererInfoById(catererId);
-      
+
       if (response.error) {
         setError(response.error);
         setLoading(false);
@@ -116,6 +117,43 @@ export default function CatererDetailPage() {
       setError('An unexpected error occurred while blocking the caterer.');
     } finally {
       setBlocking(false);
+    }
+  };
+
+  const handleUnblockCaterer = async () => {
+    if (!caterer) return;
+
+    // Confirm action
+    const confirmed = window.confirm(
+      `Are you sure you want to unblock ${caterer.business_name}? This will restore their status to APPROVED.`
+    );
+
+    if (!confirmed) return;
+
+    setUnblocking(true);
+    setError(null);
+
+    try {
+      // Re-approving the caterer essentially unblocks them
+      const response = await adminApi.updateCatererInfoStatus(catererId, 'APPROVED');
+
+      if (response.error) {
+        setError(response.error);
+        return;
+      }
+
+      if (response.data?.success) {
+        // Refresh the caterer details to show updated status
+        await fetchCatererDetails();
+        alert('Caterer has been unblocked successfully.');
+      } else {
+        setError('Failed to unblock caterer. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error unblocking caterer:', err);
+      setError('An unexpected error occurred while unblocking the caterer.');
+    } finally {
+      setUnblocking(false);
     }
   };
 
@@ -188,17 +226,16 @@ export default function CatererDetailPage() {
               <p className="text-base text-gray-600">{caterer.business_type}</p>
             </div>
             <span
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase ${
-                caterer.status === 'APPROVED'
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase ${caterer.status === 'APPROVED'
                   ? 'bg-emerald-100 text-emerald-700'
                   : caterer.status === 'PENDING'
-                  ? 'bg-amber-100 text-amber-700'
-                  : caterer.status === 'REJECTED'
-                  ? 'bg-red-100 text-red-700'
-                  : caterer.status === 'BLOCKED'
-                  ? 'bg-gray-200 text-gray-700'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
+                    ? 'bg-amber-100 text-amber-700'
+                    : caterer.status === 'REJECTED'
+                      ? 'bg-red-100 text-red-700'
+                      : caterer.status === 'BLOCKED'
+                        ? 'bg-gray-200 text-gray-700'
+                        : 'bg-gray-200 text-gray-700'
+                }`}
             >
               {caterer.status}
             </span>
@@ -467,17 +504,29 @@ export default function CatererDetailPage() {
         {/* Action Buttons */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex justify-end gap-3">
-            <button
-              onClick={handleBlockCaterer}
-              disabled={blocking || caterer.status === 'BLOCKED'}
-              className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm ${
-                blocking || caterer.status === 'BLOCKED'
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
-              }`}
-            >
-              {blocking ? 'Blocking...' : 'BLOCK CATERER'}
-            </button>
+            {caterer.status === 'BLOCKED' ? (
+              <button
+                onClick={handleUnblockCaterer}
+                disabled={unblocking}
+                className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm ${unblocking
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-md'
+                  }`}
+              >
+                {unblocking ? 'Unblocking...' : 'UNBLOCK CATERER'}
+              </button>
+            ) : (
+              <button
+                onClick={handleBlockCaterer}
+                disabled={blocking || caterer.status === 'BLOCKED'}
+                className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm ${blocking || caterer.status === 'BLOCKED'
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
+                  }`}
+              >
+                {blocking ? 'Blocking...' : 'BLOCK CATERER'}
+              </button>
+            )}
           </div>
         </div>
       </div>
