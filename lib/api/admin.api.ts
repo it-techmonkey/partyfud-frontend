@@ -149,6 +149,86 @@ export const adminApi = {
     });
   },
 
+  /**
+   * Get caterer financials
+   * @param catererId - Caterer info ID (query parameter)
+   * @returns Financial data including revenue, fees, and order statistics
+   */
+  getCatererFinancials: async (catererId: string) => {
+    if (!catererId) {
+      console.error('[API] getCatererFinancials: No catererId provided');
+      return {
+        error: "Caterer ID is required",
+      };
+    }
+    
+    const endpoint = `/api/admin/catererinfo/financials?catererId=${encodeURIComponent(catererId)}`;
+    
+    console.log('[API] ==========================================');
+    console.log('[API] getCatererFinancials called');
+    console.log('[API] Endpoint:', endpoint);
+    console.log('[API] CatererId:', catererId);
+    
+    try {
+      const response = await apiRequest<{
+        success: boolean;
+        data: {
+          totalRevenue: number;
+          commissionRate: number;
+          platformFee: number;
+          netPayout: number;
+          completedOrdersCount: number;
+          cancelledOrdersCount: number;
+          pendingOrdersCount: number;
+        };
+      }>(endpoint);
+      
+      console.log('[API] apiRequest response:', JSON.stringify(response, null, 2));
+      console.log('[API] response.error:', response.error);
+      console.log('[API] response.data:', response.data);
+      console.log('[API] response.data type:', typeof response.data);
+      
+      // apiRequest returns { data: {...}, status: ... } or { error: "...", status: ... }
+      // Backend returns { success: true, data: {...} }
+      // So response.data = { success: true, data: {...} }
+      
+      if (response.error) {
+        console.error('[API] Error in response:', response.error);
+        return { error: response.error };
+      }
+      
+      if (!response.data) {
+        console.error('[API] No data in response');
+        return { error: 'No data received from server' };
+      }
+      
+      // Extract the actual financial data from the nested structure
+      if (response.data.success && response.data.data) {
+        console.log('[API] ✅ Found data in response.data.success.data:', response.data.data);
+        return { data: response.data.data };
+      }
+      
+      // Fallback: if data is directly in response.data (shouldn't happen but handle it)
+      if (typeof response.data === 'object' && 'totalRevenue' in response.data) {
+        console.log('[API] ✅ Found data directly in response.data:', response.data);
+        return { data: response.data as any };
+      }
+      
+      // If we get here, something is wrong with the response structure
+      console.error('[API] ❌ Unexpected response structure:', JSON.stringify(response, null, 2));
+      console.error('[API] response.data keys:', response.data ? Object.keys(response.data) : 'N/A');
+      return { error: 'Unexpected response format from server' };
+    } catch (error: any) {
+      console.error(`[API] Exception in getCatererFinancials:`, error);
+      console.error(`[API] Error stack:`, error.stack);
+      return {
+        error: error.message || 'Failed to fetch financials',
+      };
+    } finally {
+      console.log('[API] ==========================================');
+    }
+  },
+
   // ============================================================================
   // METADATA MANAGEMENT
   // ============================================================================

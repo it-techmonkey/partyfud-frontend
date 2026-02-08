@@ -39,6 +39,13 @@ interface CatererDetail {
   };
 }
 
+
+// This file will now include Tabs and render different components based on the active tab
+import OrdersList from '@/components/admin/orders/OrdersList';
+import CatererFinancials from '@/components/admin/caterers/CatererFinancials';
+
+type TabType = 'details' | 'orders' | 'financials';
+
 export default function CatererDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -50,6 +57,8 @@ export default function CatererDetailPage() {
   const [blocking, setBlocking] = useState(false);
   const [unblocking, setUnblocking] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<{ url: string; name: string } | null>(null);
+
+  const [activeTab, setActiveTab] = useState<TabType>('details');
 
   useEffect(() => {
     if (catererId) {
@@ -240,6 +249,38 @@ export default function CatererDetailPage() {
               {caterer.status}
             </span>
           </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex space-x-1 mt-6 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'details'
+                ? 'border-green-600 text-green-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              Details
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'orders'
+                ? 'border-green-600 text-green-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              Orders
+            </button>
+            <button
+              onClick={() => setActiveTab('financials')}
+              className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'financials'
+                ? 'border-green-600 text-green-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              Financials
+            </button>
+          </div>
+
         </div>
 
         {/* Error Message */}
@@ -258,248 +299,265 @@ export default function CatererDetailPage() {
         )}
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm p-8 space-y-8">
-          {/* Cuisines */}
-          {caterer.cuisines && caterer.cuisines.length > 0 && (
-            <section className="border-b border-gray-200 pb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        {activeTab === 'details' && (
+          <div className="bg-white rounded-xl shadow-sm p-8 space-y-8">
+            {/* Cuisines */}
+            {caterer.cuisines && caterer.cuisines.length > 0 && (
+              <section className="border-b border-gray-200 pb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
+                  Cuisines
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {caterer.cuisines.map((cuisine, idx) => (
+                    <span
+                      key={idx}
+                      className="text-sm font-medium bg-green-100 text-green-700 px-3 py-1.5 rounded-full border border-green-200"
+                    >
+                      {cuisine}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Business Information */}
+            <section className="border-b border-gray-200 pb-6 last:border-b-0">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                 <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
-                Cuisines
+                Business Information
               </h2>
-              <div className="flex flex-wrap gap-2">
-                {caterer.cuisines.map((cuisine, idx) => (
-                  <span
-                    key={idx}
-                    className="text-sm font-medium bg-green-100 text-green-700 px-3 py-1.5 rounded-full border border-green-200"
-                  >
-                    {cuisine}
-                  </span>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Business Name</label>
+                  <p className="text-gray-900 font-medium text-base">{caterer.business_name}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Business Type</label>
+                  <p className="text-gray-900 font-medium text-base">{caterer.business_type}</p>
+                </div>
+                <div className="md:col-span-2 space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</label>
+                  <p className="text-gray-700 leading-relaxed">
+                    {caterer.business_description || <span className="text-gray-400 italic">No description provided</span>}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Service Area</label>
+                  <p className="text-gray-900 font-medium">{caterer.service_area || <span className="text-gray-400">N/A</span>}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Region</label>
+                  <p className="text-gray-900 font-medium">{caterer.region || <span className="text-gray-400">N/A</span>}</p>
+                </div>
               </div>
             </section>
-          )}
 
-          {/* Business Information */}
-          <section className="border-b border-gray-200 pb-6 last:border-b-0">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
-              Business Information
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Business Name</label>
-                <p className="text-gray-900 font-medium text-base">{caterer.business_name}</p>
+            {/* Capacity Information */}
+            <section className="border-b border-gray-200 pb-6 last:border-b-0">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
+                Capacity & Staff
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Minimum Guests</label>
+                  <p className="text-gray-900 font-medium text-lg">{caterer.minimum_guests || <span className="text-gray-400">N/A</span>}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Maximum Guests</label>
+                  <p className="text-gray-900 font-medium text-lg">{caterer.maximum_guests || <span className="text-gray-400">N/A</span>}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Preparation Time</label>
+                  <p className="text-gray-900 font-medium text-lg">
+                    {caterer.preparation_time ? `${caterer.preparation_time} hours` : <span className="text-gray-400">N/A</span>}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Staff Count</label>
+                  <p className="text-gray-900 font-medium text-lg">{caterer.staff || <span className="text-gray-400">N/A</span>}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Servers Count</label>
+                  <p className="text-gray-900 font-medium text-lg">{caterer.servers || <span className="text-gray-400">N/A</span>}</p>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Business Type</label>
-                <p className="text-gray-900 font-medium text-base">{caterer.business_type}</p>
-              </div>
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</label>
-                <p className="text-gray-700 leading-relaxed">
-                  {caterer.business_description || <span className="text-gray-400 italic">No description provided</span>}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Service Area</label>
-                <p className="text-gray-900 font-medium">{caterer.service_area || <span className="text-gray-400">N/A</span>}</p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Region</label>
-                <p className="text-gray-900 font-medium">{caterer.region || <span className="text-gray-400">N/A</span>}</p>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Capacity Information */}
-          <section className="border-b border-gray-200 pb-6 last:border-b-0">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
-              Capacity & Staff
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Minimum Guests</label>
-                <p className="text-gray-900 font-medium text-lg">{caterer.minimum_guests || <span className="text-gray-400">N/A</span>}</p>
+            {/* Service Options */}
+            <section className="border-b border-gray-200 pb-6 last:border-b-0">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
+                Service Options
+              </h2>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={caterer.delivery_only}
+                    disabled
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="text-gray-900 font-medium">Delivery Only</label>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={caterer.delivery_plus_setup}
+                    disabled
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="text-gray-900 font-medium">Delivery + Setup</label>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={caterer.full_service}
+                    disabled
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="text-gray-900 font-medium">Full Service</label>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Maximum Guests</label>
-                <p className="text-gray-900 font-medium text-lg">{caterer.maximum_guests || <span className="text-gray-400">N/A</span>}</p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Preparation Time</label>
-                <p className="text-gray-900 font-medium text-lg">
-                  {caterer.preparation_time ? `${caterer.preparation_time} hours` : <span className="text-gray-400">N/A</span>}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Staff Count</label>
-                <p className="text-gray-900 font-medium text-lg">{caterer.staff || <span className="text-gray-400">N/A</span>}</p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Servers Count</label>
-                <p className="text-gray-900 font-medium text-lg">{caterer.servers || <span className="text-gray-400">N/A</span>}</p>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Service Options */}
-          <section className="border-b border-gray-200 pb-6 last:border-b-0">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
-              Service Options
-            </h2>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={caterer.delivery_only}
-                  disabled
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label className="text-gray-900 font-medium">Delivery Only</label>
+            {/* Caterer Contact Information */}
+            <section className="border-b border-gray-200 pb-6 last:border-b-0">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
+                Contact Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</label>
+                  <p className="text-gray-900 font-medium text-base">
+                    {caterer.caterer.first_name} {caterer.caterer.last_name}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
+                  <p className="text-gray-900 font-medium text-base break-all">{caterer.caterer.email}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</label>
+                  <p className="text-gray-900 font-medium text-base">{caterer.caterer.phone}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Company Name</label>
+                  <p className="text-gray-900 font-medium">
+                    {caterer.caterer.company_name || <span className="text-gray-400">N/A</span>}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={caterer.delivery_plus_setup}
-                  disabled
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label className="text-gray-900 font-medium">Delivery + Setup</label>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={caterer.full_service}
-                  disabled
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label className="text-gray-900 font-medium">Full Service</label>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Caterer Contact Information */}
-          <section className="border-b border-gray-200 pb-6 last:border-b-0">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
-              Contact Information
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</label>
-                <p className="text-gray-900 font-medium text-base">
-                  {caterer.caterer.first_name} {caterer.caterer.last_name}
-                </p>
+            {/* Documents */}
+            <section className="border-b border-gray-200 pb-6 last:border-b-0">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
+                Documents
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Food License</label>
+                  {caterer.food_license ? (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setViewingDocument({ url: caterer.food_license!, name: 'Food License' })}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        View
+                      </button>
+                      <a
+                        href={caterer.food_license}
+                        download
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 italic">Not provided</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Registration</label>
+                  {caterer.Registration ? (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setViewingDocument({ url: caterer.Registration!, name: 'Registration' })}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        View
+                      </button>
+                      <a
+                        href={caterer.Registration}
+                        download
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 italic">Not provided</p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
-                <p className="text-gray-900 font-medium text-base break-all">{caterer.caterer.email}</p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</label>
-                <p className="text-gray-900 font-medium text-base">{caterer.caterer.phone}</p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Company Name</label>
-                <p className="text-gray-900 font-medium">
-                  {caterer.caterer.company_name || <span className="text-gray-400">N/A</span>}
-                </p>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Documents */}
-          <section className="border-b border-gray-200 pb-6 last:border-b-0">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
-              Documents
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Food License</label>
-                {caterer.food_license ? (
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setViewingDocument({ url: caterer.food_license!, name: 'Food License' })}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      View
-                    </button>
-                    <a
-                      href={caterer.food_license}
-                      download
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors text-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-gray-400 italic">Not provided</p>
-                )}
+            {/* Timestamps */}
+            <section className="border-b border-gray-200 pb-6 last:border-b-0">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
+                Timestamps
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Created At</label>
+                  <p className="text-gray-900 font-medium">
+                    {new Date(caterer.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Updated</label>
+                  <p className="text-gray-900 font-medium">
+                    {new Date(caterer.updated_at).toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Registration</label>
-                {caterer.Registration ? (
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setViewingDocument({ url: caterer.Registration!, name: 'Registration' })}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      View
-                    </button>
-                    <a
-                      href={caterer.Registration}
-                      download
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors text-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-gray-400 italic">Not provided</p>
-                )}
-              </div>
-            </div>
-          </section>
+            </section>
+          </div>
+        )}
 
-          {/* Timestamps */}
-          <section className="border-b border-gray-200 pb-6 last:border-b-0">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1 h-6 bg-gray-300 rounded-full"></span>
-              Timestamps
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Created At</label>
-                <p className="text-gray-900 font-medium">
-                  {new Date(caterer.created_at).toLocaleString()}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Updated</label>
-                <p className="text-gray-900 font-medium">
-                  {new Date(caterer.updated_at).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </section>
-        </div>
+        {/* Orders Tab Content */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6">
+            <OrdersList catererId={caterer.caterer.id} />
+          </div>
+        )}
+
+        {/* Financials Tab Content */}
+        {activeTab === 'financials' && caterer && (
+          <div className="space-y-6">
+            <CatererFinancials catererId={caterer.id} />
+          </div>
+        )}
+
 
         {/* Action Buttons */}
         <div className="bg-white rounded-xl shadow-sm p-6">
