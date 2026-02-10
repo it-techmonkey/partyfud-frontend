@@ -76,6 +76,7 @@ export interface CategorySelection {
 
 export interface CreatePackageRequest {
   name: string;
+  description?: string;
   minimum_people?: number; // Optional - defaults to caterer's minimum_guests
   cover_image_url?: string;
   total_price?: number; // Optional - if provided, this price is used (regardless of number of people); if not provided, will be calculated from items
