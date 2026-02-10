@@ -73,9 +73,16 @@ export function PackageCard({
       </div>
 
       {/* Package Name */}
-      <h3 className="font-semibold text-base text-gray-900 mb-3 pr-8">
+      <h3 className="font-semibold text-base text-gray-900 mb-2 pr-8">
         {pkg.name}
       </h3>
+
+      {/* Package Description */}
+      {pkg.description && (
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2 pr-8">
+          {pkg.description}
+        </p>
+      )}
 
       {/* Menu Summary */}
       {menuSummary && (

@@ -226,7 +226,7 @@ export default function BrowseCaterersContent() {
 
     return (
         <section className="bg-[#FAFAFA] min-h-screen">
-            <div className="max-w-7xl mx-auto px-6 py-8 md:py-12">
+            <div className="max-w-[1400px] mx-auto px-6 py-8 md:py-12">
                 <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 mb-6 md:mb-10">Browse Caterers</h1>
 
                 {/* Filter Dropdowns */}
@@ -312,8 +312,8 @@ export default function BrowseCaterersContent() {
                                 <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none transition-transform ${showFilters === 'menuType' ? 'rotate-180' : ''}`} />
                                 {showFilters === 'menuType' && (
                                     <>
-                                        <div 
-                                            className="fixed inset-0 z-[99]" 
+                                        <div
+                                            className="fixed inset-0 z-[99]"
                                             onClick={() => setShowFilters(false)}
                                         />
                                         <div className="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-[100] min-w-[200px] max-h-[300px] overflow-y-auto">
@@ -359,8 +359,8 @@ export default function BrowseCaterersContent() {
                                 <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none transition-transform ${showFilters === 'dietary' ? 'rotate-180' : ''}`} />
                                 {showFilters === 'dietary' && (
                                     <>
-                                        <div 
-                                            className="fixed inset-0 z-[99]" 
+                                        <div
+                                            className="fixed inset-0 z-[99]"
                                             onClick={() => setShowFilters(false)}
                                         />
                                         <div className="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-[100] min-w-[200px] max-h-[300px] overflow-y-auto">
@@ -387,15 +387,15 @@ export default function BrowseCaterersContent() {
                         )}
 
                         {/* Clear Filters Button */}
-                        {(selectedEventType !== 'All events' || eventDate || guestMin || guestMax || budgetMin || budgetMax || 
-                          Object.values(selectedMenuTypes).some(Boolean) || Object.values(selectedDietaryNeeds).some(Boolean)) && (
-                            <button
-                                onClick={clearFilters}
-                                className="bg-white border border-gray-200 rounded-full pl-4 pr-4 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all cursor-pointer whitespace-nowrap"
-                            >
-                                Clear All
-                            </button>
-                        )}
+                        {(selectedEventType !== 'All events' || eventDate || guestMin || guestMax || budgetMin || budgetMax ||
+                            Object.values(selectedMenuTypes).some(Boolean) || Object.values(selectedDietaryNeeds).some(Boolean)) && (
+                                <button
+                                    onClick={clearFilters}
+                                    className="bg-white border border-gray-200 rounded-full pl-4 pr-4 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all cursor-pointer whitespace-nowrap"
+                                >
+                                    Clear All
+                                </button>
+                            )}
                     </div>
                 </div>
 
@@ -429,94 +429,94 @@ export default function BrowseCaterersContent() {
 
                 {/* Caterer Grid */}
                 {!loading && !error && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                                {filteredCaterers.length === 0 ? (
-                                    <div className="col-span-full text-center py-20">
-                                        <p className="text-gray-500">No caterers found matching your filters.</p>
-                                    </div>
-                                ) : (
-                                    filteredCaterers.map((c) => {
-                                        const initials = getInitials(c.name);
-                                        // c.packages is now Package[], so we can access properties safely
-                                        const rating = c.packages?.[0]?.rating
-                                            ? typeof c.packages[0].rating === 'number'
-                                                ? c.packages[0].rating.toFixed(1)
-                                                : parseFloat(String(c.packages[0].rating)).toFixed(1)
-                                            : null;
-
-                                        return (
-                                            <Link
-                                                key={c.id}
-                                                href={`/caterers/${c.id}`}
-                                                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:border-gray-300 flex flex-col h-full"
-                                            >
-                                                {/* Image Section */}
-                                                <div className="relative h-46 bg-gray-100 overflow-hidden flex-shrink-0">
-                                                    {c.image_url ? (
-                                                        <Image
-                                                            src={c.image_url}
-                                                            alt={c.name}
-                                                            fill
-                                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                            unoptimized
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                                                            <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center">
-                                                                <span className="text-2xl font-semibold text-gray-600">{initials}</span>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Rating Badge */}
-                                                    {rating && (
-                                                        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                                                            <span>⭐</span>
-                                                            <span>{rating}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Content Section */}
-                                                <div className="p-6 flex flex-col flex-grow">
-                                                    <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-[#268700] transition-colors">
-                                                        {c.name}
-                                                    </h3>
-
-                                                    {/* Cuisines */}
-                                                    <div className="flex flex-wrap gap-2 mb-4 min-h-[24px]">
-                                                        {c.cuisines.slice(0, 3).map((cu) => (
-                                                            <span
-                                                                key={cu}
-                                                                className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full"
-                                                            >
-                                                                {cu}
-                                                            </span>
-                                                        ))}
-                                                        {c.cuisines.length > 3 && (
-                                                            <span className="text-xs font-medium text-gray-500 px-2.5 py-1">
-                                                                +{c.cuisines.length - 3}
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Price and CTA - Pushed to bottom */}
-                                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-                                                        <div>
-                                                            <p className="text-xs text-gray-500 mb-0.5">Price Range</p>
-                                                            <p className="text-sm font-semibold text-gray-900">{c.priceRange}</p>
-                                                        </div>
-                                                        <div className="text-[#268700] font-medium text-sm group-hover:translate-x-1 transition-transform whitespace-nowrap">
-                                                            View Menu →
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        );
-                                    })
-                                )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {filteredCaterers.length === 0 ? (
+                            <div className="col-span-full text-center py-20">
+                                <p className="text-gray-500">No caterers found matching your filters.</p>
                             </div>
+                        ) : (
+                            filteredCaterers.map((c) => {
+                                const initials = getInitials(c.name);
+                                // c.packages is now Package[], so we can access properties safely
+                                const rating = c.packages?.[0]?.rating
+                                    ? typeof c.packages[0].rating === 'number'
+                                        ? c.packages[0].rating.toFixed(1)
+                                        : parseFloat(String(c.packages[0].rating)).toFixed(1)
+                                    : null;
+
+                                return (
+                                    <Link
+                                        key={c.id}
+                                        href={`/caterers/${c.id}`}
+                                        className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-gray-300 flex flex-col h-full"
+                                    >
+                                        {/* Image Section */}
+                                        <div className="relative h-40 bg-gray-100 overflow-hidden flex-shrink-0">
+                                            {c.image_url ? (
+                                                <Image
+                                                    src={c.image_url}
+                                                    alt={c.name}
+                                                    fill
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    unoptimized
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                                    <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center">
+                                                        <span className="text-xl font-semibold text-gray-600">{initials}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Rating Badge */}
+                                            {rating && (
+                                                <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
+                                                    <span>⭐</span>
+                                                    <span>{rating}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Content Section */}
+                                        <div className="p-4 flex flex-col flex-grow">
+                                            <h3 className="font-semibold text-base text-gray-900 mb-1.5 group-hover:text-[#268700] transition-colors line-clamp-2">
+                                                {c.name}
+                                            </h3>
+
+                                            {/* Cuisines */}
+                                            <div className="flex flex-wrap gap-1.5 mb-3 min-h-[20px]">
+                                                {c.cuisines.slice(0, 3).map((cu) => (
+                                                    <span
+                                                        key={cu}
+                                                        className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full"
+                                                    >
+                                                        {cu}
+                                                    </span>
+                                                ))}
+                                                {c.cuisines.length > 3 && (
+                                                    <span className="text-xs font-medium text-gray-500 px-2 py-0.5">
+                                                        +{c.cuisines.length - 3}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Price and CTA - Pushed to bottom */}
+                                            <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
+                                                <div>
+                                                    <p className="text-xs text-gray-500 mb-0.5">Price Range</p>
+                                                    <p className="text-sm font-semibold text-gray-900">{c.priceRange}</p>
+                                                </div>
+                                                <div className="text-[#268700] font-medium text-xs group-hover:translate-x-1 transition-transform whitespace-nowrap">
+                                                    View →
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                );
+                            })
                         )}
+                    </div>
+                )}
             </div>
         </section>
     );

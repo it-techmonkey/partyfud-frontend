@@ -498,6 +498,16 @@ export default function PackageDetailsPage() {
                             ))}
                         </div>
 
+                        {/* Package Description */}
+                        {pkg.description && (
+                            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
+                                <h3 className="font-medium text-gray-900 mb-2">Description</h3>
+                                <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                    {pkg.description}
+                                </p>
+                            </div>
+                        )}
+
                         {/* Menu Items */}
                         <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
                             <div className="flex justify-between items-center mb-2">

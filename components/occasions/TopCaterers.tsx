@@ -21,7 +21,7 @@ export default function TopCaterers({ occasionId, occasionName }: TopCaterersPro
         setLoading(true);
         // Fetch caterers - we'll get all caterers and filter by occasion from packages
         const response = await userApi.filterCaterers({});
-        
+
         if (response.data?.data) {
           // Take top 3 caterers for display
           setCaterers(response.data.data.slice(0, 3));
@@ -82,50 +82,50 @@ export default function TopCaterers({ occasionId, occasionName }: TopCaterersPro
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {caterers.map((caterer) => (
-            <div
-              key={caterer.id}
-              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => router.push(`/caterers/${caterer.id}`)}
-            >
-              {/* Caterer Image */}
-              <div className="relative h-[250px] bg-gray-100">
-                <Image
-                  src={caterer.image_url || '/user/default-caterer.jpg'}
-                  alt={caterer.business_name || caterer.name}
-                  fill
-                  className="object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/user/default-caterer.jpg';
-                  }}
-                />
-              </div>
-
-              {/* Caterer Info */}
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-600 text-lg">★</span>
-                  <span className="font-semibold">
-                    {caterer.packages?.[0]?.rating || 4.8}
-                  </span>
+            {caterers.map((caterer) => (
+              <div
+                key={caterer.id}
+                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => router.push(`/caterers/${caterer.id}`)}
+              >
+                {/* Caterer Image */}
+                <div className="relative h-[250px] bg-gray-100">
+                  <Image
+                    src={caterer.image_url || '/user/default-caterer.jpg'}
+                    alt={caterer.business_name || caterer.name}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/user/default-caterer.jpg';
+                    }}
+                  />
                 </div>
 
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">
-                  {caterer.business_name || caterer.name}
-                </h3>
+                {/* Caterer Info */}
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-green-600 text-lg">★</span>
+                    <span className="font-semibold">
+                      {caterer.packages?.[0]?.rating || 4.8}
+                    </span>
+                  </div>
 
-                <p className="text-gray-600 text-sm mb-3">
-                  {caterer.description || 'Traditional Afternoon Tea'}
-                </p>
+                  <h3 className="text-xl font-semibold mb-2 text-gray-900">
+                    {caterer.business_name || caterer.name}
+                  </h3>
 
-                <p className="text-gray-900 font-medium">
-                  From AED {caterer.minPrice} per person
-                </p>
+                  <p className="text-gray-600 text-sm mb-3">
+                    {caterer.description || 'Traditional Afternoon Tea'}
+                  </p>
+
+                  <p className="text-gray-900 font-medium">
+                    From AED {caterer.minPrice} per person
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         )}
       </div>
     </section>

@@ -11,6 +11,7 @@ import { UAE_EMIRATES } from '@/lib/constants';
 interface PackageViewModel {
     id: string;
     title: string;
+    description?: string;
     caterer: string;
     catererId: string | undefined;
     price: number;
@@ -241,6 +242,7 @@ export default function PackagesPage() {
                         .map((pkg: ApiPackage) => ({
                             id: pkg.id,
                             title: pkg.name,
+                            description: pkg.description,
                             caterer: pkg.caterer?.name || 'Unknown Caterer',
                             catererId: pkg.caterer?.id,
                             price: Number(pkg.total_price),
@@ -327,7 +329,7 @@ export default function PackagesPage() {
 
     return (
         <section className="bg-[#FAFAFA] min-h-screen">
-            <div className="max-w-7xl mx-auto px-6 mt-8 flex items-center gap-4">
+            <div className="max-w-[1400px] mx-auto px-6 mt-8 flex items-center gap-4">
                 <button
                     onClick={() => router.back()}
                     className="p-2 hover:bg-gray-200 rounded-full transition-colors"
@@ -349,7 +351,7 @@ export default function PackagesPage() {
 
             {/* Occasion Filters */}
             {occasions.length > 0 && (
-                <div className="max-w-7xl mx-auto px-6 mt-6">
+                <div className="max-w-[1400px] mx-auto px-6 mt-6">
                     <div className="relative flex items-center gap-2">
                         {/* Left Arrow */}
                         {canScrollLeft && (
@@ -363,7 +365,7 @@ export default function PackagesPage() {
                         )}
 
                         {/* Scrollable Container */}
-                        <div 
+                        <div
                             ref={scrollContainerRef}
                             onScroll={checkScroll}
                             className="flex gap-3 overflow-x-auto no-scrollbar flex-1"
@@ -511,7 +513,7 @@ export default function PackagesPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 py-10">
+            <div className="max-w-[1400px] mx-auto px-6 py-10">
 
                 {/* RIGHT CONTENT */}
                 <div>
@@ -635,7 +637,7 @@ export default function PackagesPage() {
                             <div className="mb-4 text-sm text-gray-600">
                                 Showing {packages.length} package{packages.length !== 1 ? 's' : ''}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                                 {packages.map((pkg) => {
                                     const apiPkg = apiPackagesData.find((p: any) => p.id === pkg.id);
                                     const minimumPeople = apiPkg?.minimum_people || apiPkg?.people_count || 1;
@@ -644,10 +646,10 @@ export default function PackagesPage() {
                                         <Link
                                             key={pkg.id}
                                             href={`/caterers/${pkg.catererId}?packageId=${pkg.id}`}
-                                            className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:border-gray-300 flex flex-col h-full"
+                                            className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-gray-300 flex flex-col h-full"
                                         >
                                             {/* Image Section */}
-                                            <div className="relative h-52 bg-gray-100 overflow-hidden flex-shrink-0">
+                                            <div className="relative h-40 bg-gray-100 overflow-hidden flex-shrink-0">
                                                 <Image
                                                     src={pkg.image}
                                                     alt={pkg.title}
@@ -657,7 +659,7 @@ export default function PackagesPage() {
 
                                                 {/* Rating Badge */}
                                                 {pkg.rating && (
-                                                    <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
+                                                    <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
                                                         <span>⭐</span>
                                                         <span>{Number(pkg.rating).toFixed(1)}</span>
                                                     </div>
@@ -665,38 +667,45 @@ export default function PackagesPage() {
 
                                                 {/* Customizable Badge */}
                                                 {pkg.customizable && (
-                                                    <div className="absolute top-3 left-3 bg-[#268700] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                                                    <div className="absolute top-2 left-2 bg-[#268700] text-white text-xs font-medium px-2 py-1 rounded-full">
                                                         Customisable
                                                     </div>
                                                 )}
                                             </div>
 
                                             {/* Content Section */}
-                                            <div className="p-6 flex flex-col flex-grow">
-                                                <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-[#268700] transition-colors">
+                                            <div className="p-4 flex flex-col flex-grow">
+                                                <h3 className="font-semibold text-base text-gray-900 mb-1.5 group-hover:text-[#268700] transition-colors line-clamp-2">
                                                     {pkg.title}
                                                 </h3>
 
+                                                {/* Package Description */}
+                                                {pkg.description && (
+                                                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                                        {pkg.description}
+                                                    </p>
+                                                )}
+
                                                 {/* Caterer Name & Min People */}
-                                                <div className="flex flex-wrap gap-2 mb-4 min-h-[24px]">
-                                                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                                                <div className="flex flex-wrap gap-1.5 mb-3 min-h-[20px]">
+                                                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
                                                         {pkg.caterer}
                                                     </span>
-                                                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                                                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
                                                         Min. {minimumPeople}
                                                     </span>
                                                 </div>
 
                                                 {/* Price and CTA - Pushed to bottom */}
-                                                <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                                                <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
                                                     <div>
                                                         <p className="text-xs text-gray-500 mb-0.5">Starting from</p>
                                                         <p className="text-sm font-semibold text-gray-900">
                                                             AED {typeof pkg.price === 'number' ? pkg.price.toLocaleString() : parseInt(String(pkg.price || '0'), 10).toLocaleString()}
                                                         </p>
                                                     </div>
-                                                    <div className="text-[#268700] font-medium text-sm group-hover:translate-x-1 transition-transform whitespace-nowrap">
-                                                        View Package →
+                                                    <div className="text-[#268700] font-medium text-xs group-hover:translate-x-1 transition-transform whitespace-nowrap">
+                                                        View →
                                                     </div>
                                                 </div>
                                             </div>

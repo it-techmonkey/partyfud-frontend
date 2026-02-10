@@ -170,7 +170,7 @@ export default function CatererDetailPage() {
     checkCart();
   }, [user]);
 
-  // Select package from URL query parameter
+  // Select package from URL query parameter and scroll to it
   useEffect(() => {
     const packageId = searchParams.get('packageId');
     if (packageId && packages.length > 0) {
@@ -184,16 +184,17 @@ export default function CatererDetailPage() {
           setSelectedPackage(pkg);
           setActiveTab('packages');
         }
-        // Remove packageId from URL to clean it up
-        const newSearchParams = new URLSearchParams(searchParams.toString());
-        newSearchParams.delete('packageId');
-        const newUrl = newSearchParams.toString()
-          ? `${window.location.pathname}?${newSearchParams.toString()}`
-          : window.location.pathname;
-        router.replace(newUrl, { scroll: false });
+
+        // Scroll to the package after a short delay to ensure DOM is ready
+        setTimeout(() => {
+          const packageElement = document.getElementById(`package-${packageId}`);
+          if (packageElement) {
+            packageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 500);
       }
     }
-  }, [packages, searchParams, router]);
+  }, [packages, searchParams]);
 
   // Filter packages by type
   const fixedPackages = useMemo(() => {
@@ -571,17 +572,17 @@ export default function CatererDetailPage() {
           const selectedCount = getSelectedCountForCategory(categoryName);
           const availableCount = groupedDishesByCategory[categoryName]?.length || 0;
 
-          // Require at least one dish to be selected from each category
-          if (selectedCount === 0 && availableCount > 0) {
-            showToast('error', `Please select at least one dish from ${categoryName} category`);
-            return;
-          }
-
           // Check if limit is exceeded
           if (limit !== null && selectedCount > limit) {
             showToast('error', `You can only select up to ${limit} dish${limit === 1 ? '' : 'es'} from ${categoryName} category`);
             return;
           }
+        }
+
+        // Ensure at least one dish is selected across all categories
+        if (selectedDishes.size === 0) {
+          showToast('error', 'Please select at least one dish to add to cart');
+          return;
         }
       } else {
         // Package has no category limits - just require at least one dish selected
@@ -847,12 +848,23 @@ export default function CatererDetailPage() {
   }
 
   const logoText = getLogoText(caterer.name);
+  const packageIdFromUrl = searchParams.get('packageId');
+  const showBackLink = packageIdFromUrl !== null;
 
   return (
     <section className="bg-gray-50 min-h-screen pb-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+          {showBackLink && (
+            <>
+              <Link href="/packages" className="hover:text-green-600 transition flex items-center gap-1">
+                <ChevronLeft className="w-4 h-4" />
+                Back to Packages
+              </Link>
+              <span>/</span>
+            </>
+          )}
           <Link href="/caterers" className="hover:text-green-600 transition">
             Caterers
           </Link>
@@ -1161,6 +1173,7 @@ export default function CatererDetailPage() {
 
                     return (
                       <div
+                        id={`package-${pkg.id}`}
                         key={pkg.id}
                         onClick={() => setSelectedPackage(pkg)}
                         className={`relative border rounded-lg p-5 cursor-pointer transition-all bg-white ${isSelected

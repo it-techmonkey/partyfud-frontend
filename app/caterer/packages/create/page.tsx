@@ -494,6 +494,7 @@ export default function CreatePackagePage() {
   const [draftAddOns, setDraftAddOns] = useState<DraftAddOn[]>([]);
   const [formData, setFormData] = useState<CreatePackageRequest>({
     name: '',
+    description: '',
     minimum_people: undefined, // Will be set from caterer's minimum_guests
     cover_image_url: '',
     currency: 'AED',
@@ -925,6 +926,23 @@ export default function CreatePackagePage() {
                     placeholder={minimumGuests ? `${minimumGuests} (default from profile)` : 'Enter minimum number of people'}
                     error={errors.minimum_people}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description <span className="text-gray-500 text-xs">(Optional)</span>
+                  </label>
+                  <textarea
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter package description"
+                    rows={4}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#268700] focus:border-transparent resize-none ${
+                      errors.description ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.description && (
+                    <p className="mt-1 text-sm text-red-500">{errors.description}</p>
+                  )}
                 </div>
                 <div>
                   {/* Occasions - Multiple Selection with Checkboxes */}
