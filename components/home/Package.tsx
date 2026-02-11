@@ -12,6 +12,7 @@ interface Package {
   title: string;
   caterer: string;
   catererId: string;
+  catererSlug?: string;
   price: number;
   rating?: number;
   image: string;
@@ -93,6 +94,7 @@ export default function PopularPackagesPage() {
               title: pkg.name,
               caterer: (pkg as any).caterer?.name || 'Unknown Caterer',
               catererId: (pkg as any).caterer?.id,
+              catererSlug: (pkg as any).caterer?.slug,
               price: pkg.total_price,
               rating: pkg.rating || undefined,
               image: pkg.cover_image_url || '/user/package1.svg',
@@ -202,7 +204,7 @@ export default function PopularPackagesPage() {
             {packages.map((pkg) => (
               <Link
                 key={pkg.id}
-                href={`/caterers/${pkg.catererId}/${pkg.id}`}
+                href={`/caterers/${pkg.catererSlug || pkg.catererId}/${pkg.id}`}
                 className="min-w-[300px] bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-md transition block"
               >
                 {/* Image */}

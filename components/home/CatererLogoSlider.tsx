@@ -57,7 +57,7 @@ export default function CatererLogoSlider() {
                         <div
                             key={`${caterer.id}-${index}`}
                             className="flex-shrink-0 group cursor-pointer transition-opacity hover:opacity-100 opacity-80 relative"
-                            onClick={() => router.push(`/caterers/${caterer.id}`)}
+                            onClick={() => router.push(`/caterers/${caterer.slug || caterer.id}`)}
                         >
                             {caterer.image_url ? (
                                 <div className="relative h-16 w-32 md:h-20 md:w-40 flex items-center justify-center">

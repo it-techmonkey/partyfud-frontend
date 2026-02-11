@@ -86,7 +86,7 @@ export default function TopCaterers({ occasionId, occasionName }: TopCaterersPro
               <div
                 key={caterer.id}
                 className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => router.push(`/caterers/${caterer.id}`)}
+                onClick={() => router.push(`/caterers/${caterer.slug || caterer.id}`)}
               >
                 {/* Caterer Image */}
                 <div className="relative h-[250px] bg-gray-100">

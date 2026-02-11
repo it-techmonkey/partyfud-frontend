@@ -90,6 +90,7 @@ export default function TopPackages({ occasionId, occasionName }: TopPackagesPro
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {packages.map((pkg) => {
               const catererId = pkg.caterer?.id;
+              const catererSlug = (pkg.caterer as any)?.slug;
               const catererName = pkg.caterer?.name || 'Unknown Caterer';
               const packageImage = pkg.cover_image_url || '/user/package1.svg';
               const rating = pkg.rating;
@@ -100,7 +101,7 @@ export default function TopPackages({ occasionId, occasionName }: TopPackagesPro
               return (
                 <Link
                   key={pkg.id}
-                  href={catererId ? `/caterers/${catererId}?packageId=${pkg.id}` : `/packages`}
+                  href={catererId ? `/caterers/${catererSlug || catererId}?packageId=${pkg.id}` : `/packages`}
                   className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                 >
                   {/* Package Image */}

@@ -21,6 +21,7 @@ export interface FilterCaterersParams {
 
 export interface Caterer {
   id: string;
+  slug?: string;
   name: string;
   first_name: string;
   last_name: string;
@@ -82,6 +83,7 @@ export interface Package {
   }>;
   caterer?: {
     id: string;
+    slug?: string;
     name: string;
     location?: string | null;
   };
@@ -153,12 +155,12 @@ export const userApi = {
   },
 
   /**
-   * Get caterer by ID
-   * GET /api/user/caterers/:id
+   * Get caterer by slug (or ID for backward compatibility)
+   * GET /api/user/caterers/:slugOrId
    */
-  getCatererById: async (catererId: string) => {
+  getCatererById: async (slugOrId: string) => {
     const response = await apiRequest<{ success: boolean; data: Caterer }>(
-      `/api/user/caterers/${catererId}`,
+      `/api/user/caterers/${slugOrId}`,
       {
         method: 'GET',
       }
@@ -167,14 +169,12 @@ export const userApi = {
   },
 
   /**
-   * Get packages by caterer ID
-   * GET /api/user/packages/caterer/:catererId
-   * or
+   * Get packages by caterer slug or ID
    * GET /api/user/packages?caterer_id=xxx
    */
-  getPackagesByCatererId: async (catererId?: string) => {
-    const url = catererId
-      ? `/api/user/packages?caterer_id=${catererId}`
+  getPackagesByCatererId: async (slugOrId?: string) => {
+    const url = slugOrId
+      ? `/api/user/packages?caterer_id=${slugOrId}`
       : '/api/user/packages';
     const response = await apiRequest<{ success: boolean; data: Package[]; count: number }>(
       url,

@@ -447,7 +447,7 @@ export default function BrowseCaterersContent() {
                                 return (
                                     <Link
                                         key={c.id}
-                                        href={`/caterers/${c.id}`}
+                                        href={`/caterers/${c.slug || c.id}`}
                                         className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-gray-300 flex flex-col h-full"
                                     >
                                         {/* Image Section */}

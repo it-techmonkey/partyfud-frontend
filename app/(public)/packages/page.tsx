@@ -14,6 +14,7 @@ interface PackageViewModel {
     description?: string;
     caterer: string;
     catererId: string | undefined;
+    catererSlug?: string;
     price: number;
     rating?: number;
     image: string;
@@ -245,6 +246,7 @@ export default function PackagesPage() {
                             description: pkg.description,
                             caterer: pkg.caterer?.name || 'Unknown Caterer',
                             catererId: pkg.caterer?.id,
+                            catererSlug: (pkg.caterer as any)?.slug,
                             price: Number(pkg.total_price),
                             rating: pkg.rating || undefined,
                             image: pkg.cover_image_url || '/logo2.svg',
@@ -645,7 +647,7 @@ export default function PackagesPage() {
                                     return (
                                         <Link
                                             key={pkg.id}
-                                            href={`/caterers/${pkg.catererId}?packageId=${pkg.id}`}
+                                            href={`/caterers/${pkg.catererSlug || pkg.catererId}?packageId=${pkg.id}`}
                                             className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-gray-300 flex flex-col h-full"
                                         >
                                             {/* Image Section */}

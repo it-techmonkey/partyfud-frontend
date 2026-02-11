@@ -19,7 +19,7 @@ interface Occasion {
 }
 
 export default function CatererDetailPage() {
-  const { catererId } = useParams<{ catererId: string }>();
+  const { catererSlug } = useParams<{ catererSlug: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -93,7 +93,7 @@ export default function CatererDetailPage() {
 
   // Fetch initial data
   useEffect(() => {
-    if (!catererId) return;
+    if (!catererSlug) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -101,8 +101,8 @@ export default function CatererDetailPage() {
 
       try {
         const [catererRes, packagesRes, occasionsRes] = await Promise.all([
-          userApi.getCatererById(catererId),
-          userApi.getPackagesByCatererId(catererId),
+          userApi.getCatererById(catererSlug),
+          userApi.getPackagesByCatererId(catererSlug),
           userApi.getOccasions(),
         ]);
 
@@ -144,7 +144,7 @@ export default function CatererDetailPage() {
     };
 
     fetchData();
-  }, [catererId]);
+  }, [catererSlug]);
 
   // Check which packages are in cart
   useEffect(() => {
@@ -249,7 +249,7 @@ export default function CatererDetailPage() {
   // Fetch all caterer dishes when customizable package without category_selections is selected
   useEffect(() => {
     const fetchAllDishes = async () => {
-      if (!selectedCustomizablePackage || !catererId) return;
+      if (!selectedCustomizablePackage || !catererSlug) return;
 
       // Only fetch all dishes if package has no category_selections
       // (packages with category_selections use dishes from package.items)
@@ -259,7 +259,7 @@ export default function CatererDetailPage() {
       if (!hasCategorySelections) {
         setLoadingDishes(true);
         try {
-          const res = await userApi.getDishesByCatererId(catererId);
+          const res = await userApi.getDishesByCatererId(catererSlug);
           if (res.data?.data) {
             setAllCatererDishes(res.data.data);
           }
@@ -275,7 +275,7 @@ export default function CatererDetailPage() {
     };
 
     fetchAllDishes();
-  }, [selectedCustomizablePackage?.id, catererId]);
+  }, [selectedCustomizablePackage?.id, catererSlug]);
 
   // Group dishes by category for customizable packages
   const groupedDishesByCategory = useMemo(() => {
@@ -668,7 +668,7 @@ export default function CatererDetailPage() {
           // Store custom package in localStorage
           const { customPackageStorage } = await import('@/lib/utils/customPackageStorage');
           const customPackage = customPackageStorage.addPackage({
-            caterer_id: catererId,
+            caterer_id: caterer?.id || '',
             caterer_name: caterer?.business_name || caterer?.name || 'Unknown',
             dish_ids: dishIds,
             people_count: guestCount,
@@ -690,7 +690,7 @@ export default function CatererDetailPage() {
               currency: pkg.currency,
               cover_image_url: pkg.cover_image_url,
               caterer: {
-                id: catererId,
+                id: caterer?.id || '',
                 business_name: caterer?.business_name || null,
                 name: caterer?.name,
               },
@@ -754,7 +754,7 @@ export default function CatererDetailPage() {
               currency: pkg.currency,
               cover_image_url: pkg.cover_image_url,
               caterer: {
-                id: pkg.caterer?.id || catererId,
+                id: pkg.caterer?.id || caterer?.id || '',
                 business_name: (pkg.caterer as any)?.business_name || caterer?.business_name || null,
                 name: pkg.caterer?.name || caterer?.name,
               },
@@ -782,7 +782,7 @@ export default function CatererDetailPage() {
 
   // Handle quote request
   const handleRequestQuote = async () => {
-    if (!catererId) return;
+    if (!caterer?.id) return;
 
     if (!user) {
       showToast('error', 'Please log in to request a quote');
@@ -793,7 +793,7 @@ export default function CatererDetailPage() {
     setSubmittingQuote(true);
     try {
       const res = await userApi.createProposal({
-        caterer_id: catererId,
+        caterer_id: caterer.id,
         event_type: quoteEventType || undefined,
         location: location || undefined,
         dietary_preferences: Array.from(dietaryPreferences),
