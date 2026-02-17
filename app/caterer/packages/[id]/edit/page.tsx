@@ -440,6 +440,12 @@ export default function EditPackagePage() {
   }, [allDishes, formData.package_item_ids]);
 
   const calculatedPrice = useMemo(() => {
+    // For FIXED packages, always use the set price
+    if (formData.customisation_type === 'FIXED' && formData.total_price !== undefined) {
+      return formData.total_price;
+    }
+    
+    // For CUSTOMISABLE packages, if custom price is set, use it
     if (hasCustomPrice && formData.total_price !== undefined) {
       return formData.total_price;
     }
@@ -457,7 +463,7 @@ export default function EditPackagePage() {
       const dishPriceForGuests = calculateDishPriceForGuests(price, servesPeople, minPeople);
       return total + dishPriceForGuests;
     }, 0);
-  }, [hasCustomPrice, formData.total_price, formData.minimum_people, minimumGuests, selectedDishes]);
+  }, [formData.customisation_type, hasCustomPrice, formData.total_price, formData.minimum_people, minimumGuests, selectedDishes]);
 
   // ============================================================================
   // DATA FETCHING
@@ -690,8 +696,8 @@ export default function EditPackagePage() {
       newErrors.minimum_people = 'Minimum people must be greater than 0';
     }
 
-    // Custom price validation
-    if (hasCustomPrice) {
+    // Custom price validation (only for CUSTOMISABLE packages)
+    if (formData.customisation_type === 'CUSTOMISABLE' && hasCustomPrice) {
       if (
         formData.total_price === undefined ||
         formData.total_price === null ||
@@ -705,6 +711,14 @@ export default function EditPackagePage() {
     if (formData.customisation_type === 'FIXED') {
       if (formData.package_item_ids.length === 0) {
         newErrors.package_item_ids = 'At least one dish must be selected for fixed packages';
+      }
+      // Price is required for FIXED packages
+      if (
+        formData.total_price === undefined ||
+        formData.total_price === null ||
+        formData.total_price <= 0
+      ) {
+        newErrors.total_price = 'Price is required for fixed packages';
       }
     }
 
@@ -1008,6 +1022,40 @@ export default function EditPackagePage() {
                     error={errors.minimum_people}
                   />
                 </div>
+                
+                {/* Price for FIXED packages - shown alongside minimum people */}
+                {formData.customisation_type === 'FIXED' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Price (for {formData.minimum_people || minimumGuests || 'minimum'} people) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <img src="/dirham.svg" alt="AED" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 z-10" />
+                      <Input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={formData.total_price?.toString() || ''}
+                        onChange={(e) => {
+                          const value = e.target.value.trim();
+                          handleInputChange(
+                            'total_price',
+                            value === '' ? undefined : parseInt(value, 10)
+                          );
+                          handleInputChange('is_custom_price', true);
+                        }}
+                        placeholder="Enter package price"
+                        className="pl-12"
+                        required
+                        error={errors.total_price}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Price will scale based on multiples of minimum people (e.g., {formData.minimum_people || minimumGuests || 10} people = AED {formData.total_price || 0}, {((formData.minimum_people || minimumGuests || 10) * 2)} people = AED {(formData.total_price || 0) * 2})
+                    </p>
+                  </div>
+                )}
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description <span className="text-gray-500 text-xs">(Optional)</span>
@@ -1236,13 +1284,14 @@ export default function EditPackagePage() {
             <AddOnsSection packageId={packageId} />
           )}
 
-          {/* Pricing & Status */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-5">Pricing & Status</h2>
-            <div className="grid grid-cols-1 gap-6">
-              {/* Custom Price Toggle */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
+          {/* Pricing & Status - only for CUSTOMISABLE packages */}
+          {formData.customisation_type === 'CUSTOMISABLE' && (
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-5">Pricing & Status</h2>
+              <div className="grid grid-cols-1 gap-6">
+                {/* Custom Price Toggle */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Pricing Mode
@@ -1346,9 +1395,32 @@ export default function EditPackagePage() {
                 <p className="mt-1 text-xs text-gray-500">
                   Enter extra pricing and services information for this package
                 </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+          
+          {/* Additional Information - for FIXED packages */}
+          {formData.customisation_type === 'FIXED' && (
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-5">Additional Information</h2>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Information
+                </label>
+                <textarea
+                  value={formData.additional_info}
+                  onChange={(e) => handleInputChange('additional_info', e.target.value)}
+                  placeholder="For example: Crockery not included or per person crockery 20 AED, cleaning services extra charge of 10 AED per person etc"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#268700] focus:border-transparent resize-none"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter extra pricing and services information for this package
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="bg-white rounded-lg shadow-sm p-6 flex items-center justify-between border-t border-gray-100">
@@ -1357,7 +1429,11 @@ export default function EditPackagePage() {
               <span className="text-2xl font-bold text-gray-900 ml-2">
                 AED {calculatedPrice.toFixed(2)}
               </span>
-              {hasCustomPrice ? (
+              {formData.customisation_type === 'FIXED' ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  For {formData.minimum_people || minimumGuests} people (price scales with multiples)
+                </p>
+              ) : hasCustomPrice ? (
                 <p className="text-xs text-gray-500 mt-1">
                   Using custom price (fixed price regardless of guest count)
                 </p>

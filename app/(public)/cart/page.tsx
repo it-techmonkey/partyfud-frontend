@@ -15,10 +15,12 @@ interface CartItem {
     id: string;
     name: string;
     people_count: number;
+    minimum_people?: number;
     total_price: number;
     price_per_person: number;
     currency: string;
     cover_image_url?: string | null;
+    customisation_type?: 'FIXED' | 'CUSTOMISABLE';
     caterer: {
       id: string;
       business_name: string | null;
@@ -222,9 +224,18 @@ export default function CartPage() {
     } else {
       // Fallback to simple calculation if price_at_time not available
       const guests = item.guests || item.package.people_count || 1;
-      const pricePerPerson = item.package.price_per_person ||
-        (item.package.total_price / (item.package.people_count || 1));
-      packagePrice = Math.round(pricePerPerson * guests);
+      
+      // For FIXED packages, scale linearly
+      if ((item.package as any).customisation_type === 'FIXED') {
+        const minPeople = (item.package as any).minimum_people || item.package.people_count || 1;
+        const basePrice = item.package.total_price;
+        packagePrice = Math.round((basePrice / minPeople) * guests);
+      } else {
+        // For CUSTOMISABLE packages
+        const pricePerPerson = item.package.price_per_person ||
+          (item.package.total_price / (item.package.people_count || 1));
+        packagePrice = Math.round(pricePerPerson * guests);
+      }
     }
 
     // Add add-ons prices (add-ons are fixed price, not multiplied by guest count)

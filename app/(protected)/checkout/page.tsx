@@ -26,10 +26,12 @@ interface CartItem {
     id: string;
     name: string;
     people_count: number;
+    minimum_people?: number;
     total_price: number;
     price_per_person: number;
     currency: string;
     cover_image_url?: string | null;
+    customisation_type?: 'FIXED' | 'CUSTOMISABLE';
     caterer: {
       id: string;
       business_name: string | null;
@@ -278,11 +280,19 @@ export default function CheckoutPage() {
       packagePrice = item.price_at_time;
     } else {
       // If guest count doesn't match, we need to recalculate
-      // For now, use simple calculation as fallback
-      // The actual recalculation will happen when user proceeds to review/payment
-      const pricePerPerson = item.package.price_per_person ||
-        (item.package.total_price / (item.package.people_count || 1));
-      packagePrice = Math.round(pricePerPerson * guestCount);
+      // For FIXED packages, scale linearly
+      if (item.package.customisation_type === 'FIXED') {
+        const minPeople = item.package.minimum_people || item.package.people_count || 1;
+        const basePrice = item.package.total_price;
+        packagePrice = Math.round((basePrice / minPeople) * guestCount);
+      } else {
+        // For CUSTOMISABLE packages with custom price or auto-calculated
+        // Use simple calculation as fallback
+        // The actual recalculation will happen when user proceeds to review/payment
+        const pricePerPerson = item.package.price_per_person ||
+          (item.package.total_price / (item.package.people_count || 1));
+        packagePrice = Math.round(pricePerPerson * guestCount);
+      }
     }
 
     // Add add-ons prices (add-ons are fixed price, not multiplied by guest count)

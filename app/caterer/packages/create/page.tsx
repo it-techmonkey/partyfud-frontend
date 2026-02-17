@@ -668,7 +668,12 @@ export default function CreatePackagePage() {
 
   // Calculate package price from selected dishes
   const calculatePackagePrice = (): number => {
-    // If custom price is set, use it
+    // For FIXED packages, always use the set price
+    if (formData.customisation_type === 'FIXED' && formData.total_price !== undefined && formData.total_price !== null) {
+      return formData.total_price;
+    }
+    
+    // For CUSTOMISABLE packages, if custom price is set, use it
     if (hasCustomPrice && formData.total_price !== undefined && formData.total_price !== null) {
       return formData.total_price;
     }
@@ -709,6 +714,15 @@ export default function CreatePackagePage() {
       setErrors({ minimum_people: 'Minimum people must be greater than 0' });
       return;
     }
+    
+    // Validate price for FIXED packages
+    if (formData.customisation_type === 'FIXED') {
+      if (!formData.total_price || formData.total_price <= 0) {
+        setErrors({ total_price: 'Price is required for fixed packages' });
+        return;
+      }
+    }
+    
     // Validation based on package type
     if (formData.customisation_type === 'FIXED') {
       if (!formData.package_item_ids || formData.package_item_ids.length === 0) {
@@ -927,6 +941,43 @@ export default function CreatePackagePage() {
                     error={errors.minimum_people}
                   />
                 </div>
+                
+                {/* Price for FIXED packages - shown alongside minimum people */}
+                {formData.customisation_type === 'FIXED' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Price (for {formData.minimum_people || minimumGuests || 'minimum'} people) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <img src="/dirham.svg" alt="AED" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 z-10" />
+                      <Input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={formData.total_price !== undefined && formData.total_price !== null ? formData.total_price.toString() : ''}
+                        onChange={(e) => {
+                          const value = e.target.value.trim();
+                          if (value === '') {
+                            setFormData({ ...formData, total_price: undefined, is_custom_price: true });
+                          } else {
+                            const numValue = parseInt(value, 10);
+                            if (!isNaN(numValue) && numValue >= 0) {
+                              setFormData({ ...formData, total_price: numValue, is_custom_price: true });
+                            }
+                          }
+                        }}
+                        placeholder="Enter package price"
+                        className="pl-12"
+                        required
+                        error={errors.total_price}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Price will scale based on multiples of minimum people (e.g., {formData.minimum_people || minimumGuests || 10} people = AED {formData.total_price || 0}, {((formData.minimum_people || minimumGuests || 10) * 2)} people = AED {(formData.total_price || 0) * 2})
+                    </p>
+                  </div>
+                )}
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description <span className="text-gray-500 text-xs">(Optional)</span>
@@ -1436,128 +1487,152 @@ export default function CreatePackagePage() {
             </div>
           )}
 
-          {/* Price Information */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-5">Pricing & Status</h2>
-            <div className="grid grid-cols-1 gap-6">
-              {/* Custom Price Toggle */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Pricing Mode
-                    </label>
-                    <p className="text-xs text-gray-500">
-                      {hasCustomPrice 
-                        ? 'Set a fixed price that applies regardless of guest count'
-                        : 'Price will be automatically calculated from selected dishes'}
-                    </p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={hasCustomPrice}
-                      onChange={(e) => {
-                        const isEnabled = e.target.checked;
-                        if (!isEnabled) {
-                          // Clear custom price when toggle is off
-                          setHasCustomPrice(false);
-                          setFormData(prev => ({ ...prev, total_price: undefined, is_custom_price: false }));
-                        } else {
-                          // Enable custom price mode
-                          setHasCustomPrice(true);
-                          // If there's already a price set, keep it; otherwise initialize with calculated price
-                          if (formData.total_price !== undefined && formData.total_price !== null) {
-                            setFormData(prev => ({ ...prev, is_custom_price: true }));
-                          } else {
-                            // Calculate price from current form state
-                            const minPeople = formData.minimum_people || minimumGuests;
-                            let calculatedPrice = 0;
-                            if (formData.package_item_ids && formData.package_item_ids.length > 0 && minPeople && minPeople > 0) {
-                              const allDishes = getAllDishes();
-                              const selectedDishes = allDishes.filter(dish => formData.package_item_ids?.includes(dish.id));
-                              selectedDishes.forEach((dish) => {
-                                const price = typeof dish.price === 'number' ? Math.round(dish.price) : Math.round(Number(dish.price) || 0);
-                                calculatedPrice += price * minPeople;
-                              });
-                            }
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              total_price: calculatedPrice > 0 ? calculatedPrice : undefined, 
-                              is_custom_price: true 
-                            }));
-                          }
-                        }
-                      }}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#268700]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#268700]"></div>
-                    <span className="ml-3 text-sm font-medium text-gray-700">
-                      {hasCustomPrice ? 'Custom Price' : 'Auto Calculate'}
-                    </span>
-                  </label>
-                </div>
-
-                {/* Custom Price Input - Only shown when toggle is ON */}
-                {hasCustomPrice && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Custom Price <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <img src="/dirham.svg" alt="AED" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 z-10" />
-                      <Input
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={formData.total_price !== undefined && formData.total_price !== null ? formData.total_price.toString() : ''}
+          {/* Price Information - only for CUSTOMISABLE packages */}
+          {formData.customisation_type === 'CUSTOMISABLE' && (
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-5">Pricing & Status</h2>
+              <div className="grid grid-cols-1 gap-6">
+                {/* Custom Price Toggle */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Pricing Mode
+                      </label>
+                      <p className="text-xs text-gray-500">
+                        {hasCustomPrice 
+                          ? 'Set a fixed price that applies regardless of guest count'
+                          : 'Price will be automatically calculated from selected dishes'}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasCustomPrice}
                         onChange={(e) => {
-                          const value = e.target.value.trim();
-                          if (value === '') {
-                            setFormData({ ...formData, total_price: undefined, is_custom_price: true });
+                          const isEnabled = e.target.checked;
+                          if (!isEnabled) {
+                            // Clear custom price when toggle is off
+                            setHasCustomPrice(false);
+                            setFormData(prev => ({ ...prev, total_price: undefined, is_custom_price: false }));
                           } else {
-                            const numValue = parseInt(value, 10);
-                            if (!isNaN(numValue) && numValue >= 0) {
-                              setFormData({ ...formData, total_price: numValue, is_custom_price: true });
+                            // Enable custom price mode
+                            setHasCustomPrice(true);
+                            // If there's already a price set, keep it; otherwise initialize with calculated price
+                            if (formData.total_price !== undefined && formData.total_price !== null) {
+                              setFormData(prev => ({ ...prev, is_custom_price: true }));
+                            } else {
+                              // Calculate price from current form state
+                              const minPeople = formData.minimum_people || minimumGuests;
+                              let calculatedPrice = 0;
+                              if (formData.package_item_ids && formData.package_item_ids.length > 0 && minPeople && minPeople > 0) {
+                                const allDishes = getAllDishes();
+                                const selectedDishes = allDishes.filter(dish => formData.package_item_ids?.includes(dish.id));
+                                selectedDishes.forEach((dish) => {
+                                  const price = typeof dish.price === 'number' ? Math.round(dish.price) : Math.round(Number(dish.price) || 0);
+                                  calculatedPrice += price * minPeople;
+                                });
+                              }
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                total_price: calculatedPrice > 0 ? calculatedPrice : undefined, 
+                                is_custom_price: true 
+                              }));
                             }
                           }
                         }}
-                        placeholder="Enter custom price"
-                        className="pl-12"
-                        required
+                        className="sr-only peer"
                       />
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                      This price will be used as a fixed price regardless of the number of guests.
-                    </p>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#268700]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#268700]"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-700">
+                        {hasCustomPrice ? 'Custom Price' : 'Auto Calculate'}
+                      </span>
+                    </label>
                   </div>
-                )}
-              </div>
 
-              {/* Calculated Price Display */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {hasCustomPrice 
-                    ? 'Package Price (Custom)' 
-                    : 'Starting Price (Calculated)'}
-                </label>
-                <div className="relative">
-                  <img src="/dirham.svg" alt="AED" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                  <div className="pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
-                    <span className="text-sm text-gray-500">Starting </span>
-                    <span className="text-lg font-semibold">
-                      AED {calculatePackagePrice().toLocaleString()}
-                    </span>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {hasCustomPrice
-                        ? 'Using custom price set by caterer (fixed price regardless of guest count)'
-                        : `Price is automatically calculated from selected dishes × ${formData.minimum_people || minimumGuests || 'minimum'} people × quantity`}
-                    </p>
+                  {/* Custom Price Input - Only shown when toggle is ON */}
+                  {hasCustomPrice && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Custom Price <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <img src="/dirham.svg" alt="AED" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 z-10" />
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={formData.total_price !== undefined && formData.total_price !== null ? formData.total_price.toString() : ''}
+                          onChange={(e) => {
+                            const value = e.target.value.trim();
+                            if (value === '') {
+                              setFormData({ ...formData, total_price: undefined, is_custom_price: true });
+                            } else {
+                              const numValue = parseInt(value, 10);
+                              if (!isNaN(numValue) && numValue >= 0) {
+                                setFormData({ ...formData, total_price: numValue, is_custom_price: true });
+                              }
+                            }
+                          }}
+                          placeholder="Enter custom price"
+                          className="pl-12"
+                          required
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        This price will be used as a fixed price regardless of the number of guests.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Calculated Price Display */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {hasCustomPrice 
+                      ? 'Package Price (Custom)' 
+                      : 'Starting Price (Calculated)'}
+                  </label>
+                  <div className="relative">
+                    <img src="/dirham.svg" alt="AED" className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    <div className="pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                      <span className="text-sm text-gray-500">Starting </span>
+                      <span className="text-lg font-semibold">
+                        AED {calculatePackagePrice().toLocaleString()}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {hasCustomPrice
+                          ? 'Using custom price set by caterer (fixed price regardless of guest count)'
+                          : `Price is automatically calculated from selected dishes × ${formData.minimum_people || minimumGuests || 'minimum'} people × quantity`}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Additional Information Textarea */}
+                {/* Additional Information Textarea */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Information
+                  </label>
+                  <textarea
+                    value={formData.additional_info || ''}
+                    onChange={(e) => setFormData({ ...formData, additional_info: e.target.value })}
+                    placeholder="For example: Crockery not included or per person crockery 20 AED, cleaning services extra charge of 10 AED per person etc"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#268700] focus:border-transparent resize-none"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter extra pricing and services information for this package
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Additional Information - for FIXED packages */}
+          {formData.customisation_type === 'FIXED' && (
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-5">Additional Information</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Additional Information
@@ -1574,7 +1649,7 @@ export default function CreatePackagePage() {
                 </p>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Footer Actions */}
           <div className="bg-white rounded-lg shadow-sm p-6 flex items-center justify-between border-t border-gray-100">
@@ -1583,7 +1658,11 @@ export default function CreatePackagePage() {
               <span className="text-2xl font-bold text-gray-900 ml-2">
                 AED {calculatePackagePrice().toFixed(2)}
               </span>
-              {hasCustomPrice ? (
+              {formData.customisation_type === 'FIXED' ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  For {formData.minimum_people || minimumGuests} people (price scales with multiples)
+                </p>
+              ) : hasCustomPrice ? (
                 <p className="text-xs text-gray-500 mt-1">
                   Using custom price (fixed price regardless of guest count)
                 </p>

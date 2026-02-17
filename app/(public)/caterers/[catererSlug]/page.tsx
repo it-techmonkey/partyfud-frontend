@@ -458,9 +458,15 @@ export default function CatererDetailPage() {
 
   // Calculate price for a package based on guest count
   const calculatePrice = (pkg: Package) => {
-    // If package has fixed/custom price (is_custom_price = true), use total_price as-is
-    if (pkg.is_custom_price) {
-      // Ensure we're using Number() to convert from Decimal/string
+    // For FIXED packages with custom price, scale linearly
+    if (pkg.customisation_type === 'FIXED' && pkg.is_custom_price) {
+      const peopleCount = pkg.people_count || pkg.minimum_people || 1;
+      const totalPrice = typeof pkg.total_price === 'number' ? pkg.total_price : Number(pkg.total_price || 0);
+      return Math.round((totalPrice / peopleCount) * guestCount);
+    }
+    
+    // For CUSTOMISABLE packages with custom price, use total_price as-is (no scaling)
+    if (pkg.customisation_type === 'CUSTOMISABLE' && pkg.is_custom_price) {
       return typeof pkg.total_price === 'number' ? pkg.total_price : Number(pkg.total_price || 0);
     }
 
@@ -1064,6 +1070,11 @@ export default function CatererDetailPage() {
                 <p className="text-sm text-gray-500 mt-1">
                   Choose a package and add it to your cart
                 </p>
+                {selectedPackage && selectedPackage.customisation_type === 'FIXED' && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Guest count must be in multiples of {selectedPackage.minimum_people || selectedPackage.people_count} for this package
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-gray-700">
@@ -1072,7 +1083,12 @@ export default function CatererDetailPage() {
                 <div className="flex items-center border border-gray-200 rounded-lg">
                   <button
                     onClick={() => {
-                      const newCount = Math.max(caterer.minimum_guests || 1, guestCount - 1);
+                      let decrement = 1;
+                      // For FIXED packages, decrement by minimum_people
+                      if (selectedPackage && selectedPackage.customisation_type === 'FIXED') {
+                        decrement = selectedPackage.minimum_people || selectedPackage.people_count || 1;
+                      }
+                      const newCount = Math.max(caterer.minimum_guests || 1, guestCount - decrement);
                       setGuestCount(newCount);
                       setGuestCountInput(String(newCount));
                     }}
@@ -1099,6 +1115,16 @@ export default function CatererDetailPage() {
                         return;
                       }
 
+                      // For FIXED packages, ensure guest count is a multiple of minimum_people
+                      if (selectedPackage && selectedPackage.customisation_type === 'FIXED') {
+                        const minPeople = selectedPackage.minimum_people || selectedPackage.people_count || 1;
+                        const nearestMultiple = Math.round(numValue / minPeople) * minPeople;
+                        const validValue = Math.max(minPeople, nearestMultiple);
+                        setGuestCount(validValue);
+                        setGuestCountInput(String(validValue));
+                        return;
+                      }
+
                       // Clamp to min/max range
                       const minGuests = caterer.minimum_guests || 1;
                       const maxGuests = caterer.maximum_guests || 9999;
@@ -1115,10 +1141,16 @@ export default function CatererDetailPage() {
                     className="w-20 text-center py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#268700] focus:border-transparent"
                     min={caterer.minimum_guests || 1}
                     max={caterer.maximum_guests || 9999}
+                    step={selectedPackage && selectedPackage.customisation_type === 'FIXED' ? (selectedPackage.minimum_people || selectedPackage.people_count || 1) : 1}
                   />
                   <button
                     onClick={() => {
-                      const newCount = Math.min(caterer.maximum_guests || 9999, guestCount + 1);
+                      let increment = 1;
+                      // For FIXED packages, increment by minimum_people
+                      if (selectedPackage && selectedPackage.customisation_type === 'FIXED') {
+                        increment = selectedPackage.minimum_people || selectedPackage.people_count || 1;
+                      }
+                      const newCount = Math.min(caterer.maximum_guests || 9999, guestCount + increment);
                       setGuestCount(newCount);
                       setGuestCountInput(String(newCount));
                     }}
