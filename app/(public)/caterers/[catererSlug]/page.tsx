@@ -34,8 +34,8 @@ export default function CatererDetailPage() {
 
   // UI states
   const [activeTab, setActiveTab] = useState<TabType>('packages');
-  const [guestCount, setGuestCount] = useState(50);
-  const [guestCountInput, setGuestCountInput] = useState<string>('50');
+  const [packageGuestCounts, setPackageGuestCounts] = useState<Record<string, number>>({});
+  const [buildYourOwnGuestCount, setBuildYourOwnGuestCount] = useState(50);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [selectedCustomizablePackage, setSelectedCustomizablePackage] = useState<Package | null>(null);
 
@@ -60,6 +60,7 @@ export default function CatererDetailPage() {
   const [quoteEventDate, setQuoteEventDate] = useState('');
   const [quoteVision, setQuoteVision] = useState('');
   const [quoteBudget, setQuoteBudget] = useState('');
+  const [quoteGuestCount, setQuoteGuestCount] = useState(50);
   const [dietaryPreferences, setDietaryPreferences] = useState<Set<string>>(new Set());
   const [submittingQuote, setSubmittingQuote] = useState(false);
 
@@ -113,12 +114,6 @@ export default function CatererDetailPage() {
 
         if (catererRes.data?.data) {
           setCaterer(catererRes.data.data);
-          // Set initial guest count based on caterer's minimum
-          if (catererRes.data.data.minimum_guests) {
-            const initialCount = catererRes.data.data.minimum_guests;
-            setGuestCount(initialCount);
-            setGuestCountInput(String(initialCount));
-          }
         }
 
         if (packagesRes.data?.data) {
@@ -195,6 +190,14 @@ export default function CatererDetailPage() {
       }
     }
   }, [packages, searchParams]);
+
+  // Initialize Build Your Own guest count when package is selected
+  useEffect(() => {
+    if (selectedCustomizablePackage) {
+      const minGuests = selectedCustomizablePackage.minimum_people || caterer?.minimum_guests || 50;
+      setBuildYourOwnGuestCount(minGuests);
+    }
+  }, [selectedCustomizablePackage?.id, caterer?.minimum_guests]);
 
   // Filter packages by type
   const fixedPackages = useMemo(() => {
@@ -456,13 +459,47 @@ export default function CatererDetailPage() {
     setSelectedDishes(newSelected);
   };
 
+  // Get guest count for a specific package
+  const getPackageGuestCount = (packageId: string, pkg?: Package): number => {
+    // If already set, return it
+    if (packageGuestCounts[packageId]) {
+      return packageGuestCounts[packageId];
+    }
+    // Otherwise, return default based on package type
+    if (pkg) {
+      const minPeople = pkg.minimum_people || pkg.people_count || 1;
+      return minPeople;
+    }
+    return 1;
+  };
+
+  // Set guest count for a specific package
+  const setPackageGuestCount = (packageId: string, count: number) => {
+    setPackageGuestCounts(prev => ({
+      ...prev,
+      [packageId]: count
+    }));
+  };
+
   // Calculate price for a package based on guest count
-  const calculatePrice = (pkg: Package) => {
+  const calculatePrice = (pkg: Package, guestCount?: number) => {
+    // Determine the actual guest count based on package type
+    let actualGuestCount: number;
+    if (guestCount !== undefined) {
+      actualGuestCount = guestCount;
+    } else if (pkg.customisation_type === 'CUSTOMISABLE' || pkg.customisation_type === 'CUSTOMIZABLE') {
+      // For Build Your Own packages, use centralized guest count
+      actualGuestCount = buildYourOwnGuestCount;
+    } else {
+      // For Fixed Menu packages, use per-package guest count
+      actualGuestCount = getPackageGuestCount(pkg.id, pkg);
+    }
+    
     // For FIXED packages with custom price, scale linearly
     if (pkg.customisation_type === 'FIXED' && pkg.is_custom_price) {
       const peopleCount = pkg.people_count || pkg.minimum_people || 1;
       const totalPrice = typeof pkg.total_price === 'number' ? pkg.total_price : Number(pkg.total_price || 0);
-      return Math.round((totalPrice / peopleCount) * guestCount);
+      return Math.round((totalPrice / peopleCount) * actualGuestCount);
     }
     
     // For CUSTOMISABLE packages with custom price, use total_price as-is (no scaling)
@@ -497,7 +534,7 @@ export default function CatererDetailPage() {
           const quantity = item.quantity || 1;
           const servesPeople = item.dish?.serves_people ?? null;
           // Use the new calculation function that considers serves_people
-          const dishPriceForGuests = calculateDishPriceForGuests(dishPrice, servesPeople, guestCount);
+          const dishPriceForGuests = calculateDishPriceForGuests(dishPrice, servesPeople, actualGuestCount);
           selectedTotal += dishPriceForGuests * quantity;
         }
       });
@@ -515,7 +552,7 @@ export default function CatererDetailPage() {
           const dishPrice = Number(item.price_at_time || dish.price || 0);
           const quantity = item.quantity || 1;
           const servesPeople = dish.serves_people ?? null;
-          const dishPriceForGuests = calculateDishPriceForGuests(dishPrice, servesPeople, guestCount);
+          const dishPriceForGuests = calculateDishPriceForGuests(dishPrice, servesPeople, actualGuestCount);
           totalPrice += dishPriceForGuests * quantity;
         }
       });
@@ -528,7 +565,7 @@ export default function CatererDetailPage() {
     const totalPrice = typeof pkg.total_price === 'number' ? pkg.total_price : Number(pkg.total_price || 0);
     // Always calculate price_per_person from total_price to ensure accuracy
     const pricePerPerson = peopleCount > 0 ? totalPrice / peopleCount : 0;
-    return Math.round(pricePerPerson * guestCount);
+    return Math.round(pricePerPerson * actualGuestCount);
   };
 
   // Calculate price per person for display
@@ -601,6 +638,8 @@ export default function CatererDetailPage() {
 
     setAddingToCart(true);
     try {
+      // Determine guest count based on package type
+      const guestCount = isCustomizable ? buildYourOwnGuestCount : getPackageGuestCount(pkg.id, pkg);
       const totalPrice = calculatePrice(pkg);
       const peopleCount = pkg.people_count || pkg.minimum_people || 1;
       const pricePerPerson = pkg.price_per_person ?? (pkg.total_price / peopleCount);
@@ -806,7 +845,7 @@ export default function CatererDetailPage() {
         budget_per_person: quoteBudget || undefined,
         event_date: quoteEventDate || undefined,
         vision: quoteVision || undefined,
-        guest_count: guestCount,
+        guest_count: quoteGuestCount,
       });
 
       if (res.error) {
@@ -1059,111 +1098,6 @@ export default function CatererDetailPage() {
           </div>
         </div>
 
-        {/* Guest Count Selector - Shown for packages and build your own tabs */}
-        {(activeTab === 'packages' || activeTab === 'buildOwn') && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {activeTab === 'packages' ? 'Select Your Package' : 'Build Your Menu'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Choose a package and add it to your cart
-                </p>
-                {selectedPackage && selectedPackage.customisation_type === 'FIXED' && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Guest count must be in multiples of {selectedPackage.minimum_people || selectedPackage.people_count} for this package
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-gray-700">
-                  Number of guests:
-                </label>
-                <div className="flex items-center border border-gray-200 rounded-lg">
-                  <button
-                    onClick={() => {
-                      let decrement = 1;
-                      // For FIXED packages, decrement by minimum_people
-                      if (selectedPackage && selectedPackage.customisation_type === 'FIXED') {
-                        decrement = selectedPackage.minimum_people || selectedPackage.people_count || 1;
-                      }
-                      const newCount = Math.max(caterer.minimum_guests || 1, guestCount - decrement);
-                      setGuestCount(newCount);
-                      setGuestCountInput(String(newCount));
-                    }}
-                    className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <input
-                    type="number"
-                    value={guestCountInput}
-                    onChange={(e) => {
-                      // Allow user to type freely - store as string
-                      setGuestCountInput(e.target.value);
-                    }}
-                    onBlur={(e) => {
-                      const inputValue = e.target.value.trim();
-                      const numValue = Number(inputValue);
-
-                      // Validate and clamp on blur
-                      if (inputValue === '' || isNaN(numValue) || numValue < 1) {
-                        const minGuests = caterer.minimum_guests || 1;
-                        setGuestCount(minGuests);
-                        setGuestCountInput(String(minGuests));
-                        return;
-                      }
-
-                      // For FIXED packages, ensure guest count is a multiple of minimum_people
-                      if (selectedPackage && selectedPackage.customisation_type === 'FIXED') {
-                        const minPeople = selectedPackage.minimum_people || selectedPackage.people_count || 1;
-                        const nearestMultiple = Math.round(numValue / minPeople) * minPeople;
-                        const validValue = Math.max(minPeople, nearestMultiple);
-                        setGuestCount(validValue);
-                        setGuestCountInput(String(validValue));
-                        return;
-                      }
-
-                      // Clamp to min/max range
-                      const minGuests = caterer.minimum_guests || 1;
-                      const maxGuests = caterer.maximum_guests || 9999;
-                      const clampedValue = Math.max(minGuests, Math.min(maxGuests, numValue));
-                      setGuestCount(clampedValue);
-                      setGuestCountInput(String(clampedValue));
-                    }}
-                    onKeyDown={(e) => {
-                      // Handle Enter key to validate and blur
-                      if (e.key === 'Enter') {
-                        e.currentTarget.blur();
-                      }
-                    }}
-                    className="w-20 text-center py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#268700] focus:border-transparent"
-                    min={caterer.minimum_guests || 1}
-                    max={caterer.maximum_guests || 9999}
-                    step={selectedPackage && selectedPackage.customisation_type === 'FIXED' ? (selectedPackage.minimum_people || selectedPackage.people_count || 1) : 1}
-                  />
-                  <button
-                    onClick={() => {
-                      let increment = 1;
-                      // For FIXED packages, increment by minimum_people
-                      if (selectedPackage && selectedPackage.customisation_type === 'FIXED') {
-                        increment = selectedPackage.minimum_people || selectedPackage.people_count || 1;
-                      }
-                      const newCount = Math.min(caterer.maximum_guests || 9999, guestCount + increment);
-                      setGuestCount(newCount);
-                      setGuestCountInput(String(newCount));
-                    }}
-                    className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Tab Content - Two Column Layout */}
         {activeTab === 'packages' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1269,6 +1203,66 @@ export default function CatererDetailPage() {
                         {/* Separator */}
                         <div className="border-t border-gray-200 my-4"></div>
 
+                        {/* Guest Count Selector */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                              Number of guests:
+                            </label>
+                            <div className="flex items-center border border-gray-200 rounded-lg">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const minPeople = pkg.minimum_people || pkg.people_count || 1;
+                                  const currentCount = getPackageGuestCount(pkg.id, pkg);
+                                  const newCount = Math.max(minPeople, currentCount - minPeople);
+                                  setPackageGuestCount(pkg.id, newCount);
+                                }}
+                                className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <input
+                                type="number"
+                                value={getPackageGuestCount(pkg.id, pkg)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  const value = parseInt(e.target.value);
+                                  if (!isNaN(value) && value > 0) {
+                                    setPackageGuestCount(pkg.id, value);
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onBlur={(e) => {
+                                  const minPeople = pkg.minimum_people || pkg.people_count || 1;
+                                  const value = parseInt(e.target.value);
+                                  if (isNaN(value) || value < minPeople) {
+                                    setPackageGuestCount(pkg.id, minPeople);
+                                  } else {
+                                    // Round to nearest multiple of minPeople
+                                    const nearestMultiple = Math.round(value / minPeople) * minPeople;
+                                    setPackageGuestCount(pkg.id, Math.max(minPeople, nearestMultiple));
+                                  }
+                                }}
+                                className="w-16 text-center py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                min={pkg.minimum_people || pkg.people_count || 1}
+                                step={pkg.minimum_people || pkg.people_count || 1}
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const minPeople = pkg.minimum_people || pkg.people_count || 1;
+                                  const currentCount = getPackageGuestCount(pkg.id, pkg);
+                                  setPackageGuestCount(pkg.id, currentCount + minPeople);
+                                }}
+                                className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Pricing */}
                         <div className="space-y-1">
                           <p className="font-bold text-base text-gray-900">
@@ -1280,7 +1274,7 @@ export default function CatererDetailPage() {
                           </p>
                           {!pkg.is_custom_price && (
                             <p className="text-sm text-gray-500">
-                              Total for {guestCount} guests: AED {totalPrice.toLocaleString()}
+                              Total for {getPackageGuestCount(pkg.id)} guests: AED {totalPrice.toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -1431,7 +1425,7 @@ export default function CatererDetailPage() {
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Package for {guestCount} guests</span>
+                        <span className="text-sm text-gray-600">Package for {getPackageGuestCount(selectedPackage.id)} guests</span>
                         <span className="text-sm font-medium text-gray-900">
                           {selectedPackage.currency} {calculatePrice(selectedPackage).toLocaleString()}
                         </span>
@@ -1503,6 +1497,68 @@ export default function CatererDetailPage() {
 
         {activeTab === 'buildOwn' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Guest Count Selector - Shown above packages */}
+            {customizablePackages.length > 0 && (
+              <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Build Your Menu</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Choose a package and select your dishes
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-gray-700">
+                      Number of guests:
+                    </label>
+                    <div className="flex items-center border border-gray-200 rounded-lg">
+                      <button
+                        onClick={() => {
+                          const minGuests = selectedCustomizablePackage?.minimum_people || caterer?.minimum_guests || 1;
+                          const newCount = Math.max(minGuests, buildYourOwnGuestCount - 1);
+                          setBuildYourOwnGuestCount(newCount);
+                        }}
+                        className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="number"
+                        value={buildYourOwnGuestCount}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (!isNaN(value) && value > 0) {
+                            setBuildYourOwnGuestCount(value);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const minGuests = selectedCustomizablePackage?.minimum_people || caterer?.minimum_guests || 1;
+                          const value = parseInt(e.target.value);
+                          if (isNaN(value) || value < minGuests) {
+                            setBuildYourOwnGuestCount(minGuests);
+                          } else {
+                            setBuildYourOwnGuestCount(value);
+                          }
+                        }}
+                        className="w-20 text-center py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        min={selectedCustomizablePackage?.minimum_people || caterer?.minimum_guests || 1}
+                      />
+                      <button
+                        onClick={() => {
+                          const maxGuests = caterer?.maximum_guests || 9999;
+                          const newCount = Math.min(maxGuests, buildYourOwnGuestCount + 1);
+                          setBuildYourOwnGuestCount(newCount);
+                        }}
+                        className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Left Column - Packages */}
             <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
               {customizablePackages.length === 0 ? (
@@ -1630,9 +1686,9 @@ export default function CatererDetailPage() {
                         <div className="border-t border-gray-100 pt-4">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">
-                              {pkg.is_custom_price ? 'Total:' : `Total for ${guestCount} guests:`}
+                              {pkg.is_custom_price ? 'Total:' : `Total for ${buildYourOwnGuestCount} guests:`}
                             </span>
-                            <span className="font-bold text-gray-900">AED {totalPrice.toLocaleString()}</span>
+                            <span className="font-bold text-gray-900">AED {calculatePrice(pkg).toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -1882,7 +1938,7 @@ export default function CatererDetailPage() {
                 {selectedCustomizablePackage && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600">Total for {guestCount} guests</span>
+                      <span className="text-sm text-gray-600">Total for {buildYourOwnGuestCount} guests</span>
                       <span className="text-xl font-bold text-gray-900">
                         AED {calculatePrice(selectedCustomizablePackage).toLocaleString()}
                       </span>
@@ -1951,8 +2007,8 @@ export default function CatererDetailPage() {
                   <input
                     type="number"
                     min={1}
-                    value={guestCount}
-                    onChange={(e) => setGuestCount(Number(e.target.value))}
+                    value={quoteGuestCount}
+                    onChange={(e) => setQuoteGuestCount(Number(e.target.value))}
                     className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>

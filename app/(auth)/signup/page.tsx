@@ -74,14 +74,8 @@ function SignupContent() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side*/}
-      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-[#268700] to-[#1f6b00] relative overflow-hidden">
-        <Image src="/left_ui.svg" alt="Food Theme" fill className="object-cover" />
-        <div className='absolute text-5xl text-white m-8 p-6'>Grow your catering <br></br>business with PartyFud</div>
-      </div>
-
-      {/* Right Side - Signup Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+      {/* Signup Form */}
+      <div className="w-full flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto">
         <div className="max-w-md w-full space-y-6">
           {/* Back to Home Button */}
           <Link 
