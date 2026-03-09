@@ -16,6 +16,8 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const role = searchParams.get('role');
+  const buttonLabel = role === 'admin' ? 'Sign in as Admin' : role === 'caterer' ? 'Sign in as Caterer' : 'Sign in';
   const { login, user, loading: authLoading } = useAuth();
   const userRef = useRef(user);
   const [formData, setFormData] = useState({
@@ -160,7 +162,7 @@ function LoginContent() {
 
               <div>
                 <Button type="submit" variant="primary" className="w-full py-3 text-base font-semibold" isLoading={isLoading}>
-                  Sign in
+                  {buttonLabel}
                 </Button>
               </div>
 
