@@ -280,11 +280,11 @@ export default function CheckoutPage() {
       packagePrice = item.price_at_time;
     } else {
       // If guest count doesn't match, we need to recalculate
-      // For FIXED packages, scale linearly
+      // For FIXED packages, use ceiling-batch pricing
       if (item.package.customisation_type === 'FIXED') {
         const minPeople = item.package.minimum_people || item.package.people_count || 1;
         const basePrice = item.package.total_price;
-        packagePrice = Math.round((basePrice / minPeople) * guestCount);
+        packagePrice = Math.ceil(guestCount / minPeople) * basePrice;
       } else {
         // For CUSTOMISABLE packages with custom price or auto-calculated
         // Use simple calculation as fallback

@@ -225,11 +225,11 @@ export default function CartPage() {
       // Fallback to simple calculation if price_at_time not available
       const guests = item.guests || item.package.people_count || 1;
       
-      // For FIXED packages, scale linearly
+      // For FIXED packages, use ceiling-batch pricing
       if ((item.package as any).customisation_type === 'FIXED') {
         const minPeople = (item.package as any).minimum_people || item.package.people_count || 1;
         const basePrice = item.package.total_price;
-        packagePrice = Math.round((basePrice / minPeople) * guests);
+        packagePrice = Math.ceil(guests / minPeople) * basePrice;
       } else {
         // For CUSTOMISABLE packages
         const pricePerPerson = item.package.price_per_person ||

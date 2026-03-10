@@ -495,11 +495,13 @@ export default function CatererDetailPage() {
       actualGuestCount = getPackageGuestCount(pkg.id, pkg);
     }
     
-    // For FIXED packages with custom price, scale linearly
+    // For FIXED packages with custom price, use ceiling-batch pricing
+    // e.g. package for 10 people at AED 100: 1-10 guests = AED 100, 11-20 = AED 200
     if (pkg.customisation_type === 'FIXED' && pkg.is_custom_price) {
       const peopleCount = pkg.people_count || pkg.minimum_people || 1;
       const totalPrice = typeof pkg.total_price === 'number' ? pkg.total_price : Number(pkg.total_price || 0);
-      return Math.round((totalPrice / peopleCount) * actualGuestCount);
+      const batches = Math.ceil(actualGuestCount / peopleCount);
+      return Math.round(batches * totalPrice);
     }
     
     // For CUSTOMISABLE packages with custom price, use total_price as-is (no scaling)
@@ -1215,7 +1217,7 @@ export default function CatererDetailPage() {
                                   e.stopPropagation();
                                   const minPeople = pkg.minimum_people || pkg.people_count || 1;
                                   const currentCount = getPackageGuestCount(pkg.id, pkg);
-                                  const newCount = Math.max(minPeople, currentCount - minPeople);
+                                  const newCount = Math.max(minPeople, currentCount - 1);
                                   setPackageGuestCount(pkg.id, newCount);
                                 }}
                                 className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
@@ -1239,21 +1241,18 @@ export default function CatererDetailPage() {
                                   if (isNaN(value) || value < minPeople) {
                                     setPackageGuestCount(pkg.id, minPeople);
                                   } else {
-                                    // Round to nearest multiple of minPeople
-                                    const nearestMultiple = Math.round(value / minPeople) * minPeople;
-                                    setPackageGuestCount(pkg.id, Math.max(minPeople, nearestMultiple));
+                                    setPackageGuestCount(pkg.id, value);
                                   }
                                 }}
                                 className="w-16 text-center py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                 min={pkg.minimum_people || pkg.people_count || 1}
-                                step={pkg.minimum_people || pkg.people_count || 1}
+                                step={1}
                               />
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const minPeople = pkg.minimum_people || pkg.people_count || 1;
                                   const currentCount = getPackageGuestCount(pkg.id, pkg);
-                                  setPackageGuestCount(pkg.id, currentCount + minPeople);
+                                  setPackageGuestCount(pkg.id, currentCount + 1);
                                 }}
                                 className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
                               >
@@ -1266,15 +1265,22 @@ export default function CatererDetailPage() {
                         {/* Pricing */}
                         <div className="space-y-1">
                           <p className="font-bold text-base text-gray-900">
-                            {pkg.is_custom_price ? (
-                              <>AED {Number(pkg.total_price).toLocaleString()}</>
-                            ) : (
-                              <>AED {pricePerPerson.toLocaleString()} / person</>
-                            )}
+                            AED {totalPrice.toLocaleString()}
                           </p>
+                          {pkg.is_custom_price && (() => {
+                            const minPeople = pkg.minimum_people || pkg.people_count || 1;
+                            const guestCountForPkg = getPackageGuestCount(pkg.id, pkg);
+                            const batches = Math.ceil(guestCountForPkg / minPeople);
+                            const servedCount = batches * minPeople;
+                            return (
+                              <p className="text-xs text-gray-500">
+                                Serves up to {servedCount} guests ({batches} {batches === 1 ? 'batch' : 'batches'} × AED {Number(pkg.total_price).toLocaleString()})
+                              </p>
+                            );
+                          })()}
                           {!pkg.is_custom_price && (
                             <p className="text-sm text-gray-500">
-                              Total for {getPackageGuestCount(pkg.id)} guests: AED {totalPrice.toLocaleString()}
+                              AED {pricePerPerson.toLocaleString()} / person
                             </p>
                           )}
                         </div>
