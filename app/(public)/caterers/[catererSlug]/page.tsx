@@ -1207,59 +1207,61 @@ export default function CatererDetailPage() {
 
                         {/* Guest Count Selector */}
                         <div className="mb-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">
-                              Number of guests:
-                            </label>
-                            <div className="flex items-center border border-gray-200 rounded-lg">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const minPeople = pkg.minimum_people || pkg.people_count || 1;
-                                  const currentCount = getPackageGuestCount(pkg.id, pkg);
-                                  const newCount = Math.max(minPeople, currentCount - 1);
-                                  setPackageGuestCount(pkg.id, newCount);
-                                }}
-                                className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                              <input
-                                type="number"
-                                value={getPackageGuestCount(pkg.id, pkg)}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  const value = parseInt(e.target.value);
-                                  if (!isNaN(value) && value > 0) {
-                                    setPackageGuestCount(pkg.id, value);
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                onBlur={(e) => {
-                                  const minPeople = pkg.minimum_people || pkg.people_count || 1;
-                                  const value = parseInt(e.target.value);
-                                  if (isNaN(value) || value < minPeople) {
-                                    setPackageGuestCount(pkg.id, minPeople);
-                                  } else {
-                                    setPackageGuestCount(pkg.id, value);
-                                  }
-                                }}
-                                className="w-16 text-center py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                min={pkg.minimum_people || pkg.people_count || 1}
-                                step={1}
-                              />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const currentCount = getPackageGuestCount(pkg.id, pkg);
-                                  setPackageGuestCount(pkg.id, currentCount + 1);
-                                }}
-                                className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
+                          {(() => {
+                            const minPeople = pkg.minimum_people || pkg.people_count || 1;
+                            const currentBatches = Math.ceil(getPackageGuestCount(pkg.id, pkg) / minPeople);
+                            return (
+                              <>
+                                <div className="flex items-center justify-between gap-3">
+                                  <label className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                                    Quantity:
+                                  </label>
+                                  <div className="flex items-center border border-gray-200 rounded-lg">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const newBatches = Math.max(1, currentBatches - 1);
+                                        setPackageGuestCount(pkg.id, newBatches * minPeople);
+                                      }}
+                                      className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
+                                    >
+                                      <Minus className="w-4 h-4" />
+                                    </button>
+                                    <input
+                                      type="number"
+                                      value={currentBatches}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        const batches = parseInt(e.target.value);
+                                        if (!isNaN(batches) && batches > 0) {
+                                          setPackageGuestCount(pkg.id, batches * minPeople);
+                                        }
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onBlur={(e) => {
+                                        const batches = parseInt(e.target.value);
+                                        if (isNaN(batches) || batches < 1) {
+                                          setPackageGuestCount(pkg.id, minPeople);
+                                        }
+                                      }}
+                                      className="w-16 text-center py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      min={1}
+                                      step={1}
+                                    />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPackageGuestCount(pkg.id, (currentBatches + 1) * minPeople);
+                                      }}
+                                      className="px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
 
                         {/* Pricing */}
@@ -1274,7 +1276,7 @@ export default function CatererDetailPage() {
                             const servedCount = batches * minPeople;
                             return (
                               <p className="text-xs text-gray-500">
-                                Serves up to {servedCount} guests ({batches} {batches === 1 ? 'batch' : 'batches'} × AED {Number(pkg.total_price).toLocaleString()})
+                                Serves up to {servedCount} guests
                               </p>
                             );
                           })()}
